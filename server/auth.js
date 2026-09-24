@@ -9,6 +9,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { sendCode, testMode, channelAvailable } from './notify.js';
+import * as validate from './validate.js';
 
 const FILE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../data/users.json');
 const PROD = process.env.NODE_ENV === 'production';
@@ -34,16 +35,8 @@ const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
 
 export function normalize(channel, raw) {
   const v = String(raw ?? '').trim();
-  if (channel === 'email') {
-    const e = v.toLowerCase();
-    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e) && e.length <= 120 ? e : null;
-  }
-  if (channel === 'sms') {
-    let d = v.replace(/\D/g, '');
-    if (d.length === 11 && d[0] === '8') d = '7' + d.slice(1);
-    if (d.length === 10 && d[0] === '9') d = '7' + d;
-    return /^7\d{10}$/.test(d) ? `+${d}` : null;
-  }
+  if (channel === 'email') return validate.email(v);
+  if (channel === 'sms') return validate.phone(v);
   return null;
 }
 

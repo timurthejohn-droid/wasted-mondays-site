@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as catalog from './catalog.js';
 import { DELIVERY, STATUS } from './orders.js';
+import { COUNTRIES } from './validate.js';
 
 const DATA = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../data');
 const BRAND = 'Wasted Mondays';
@@ -202,6 +203,7 @@ ${body}
   </div>
 </div>
 <div class="toast" data-toast role="status" hidden></div>
+<script type="application/json" id="wm-countries">${JSON.stringify(COUNTRIES)}</script>
 <div class="lead" data-lead hidden>
   <div class="lead__box" role="dialog" aria-modal="true" aria-labelledby="lead-title">
     <div class="lead__body">
@@ -280,6 +282,11 @@ ${cols.map((c) => {
   return layout({ user, title: `Коллекции | ${BRAND}`, body, bodyClass: 'page-cols' });
 }
 
+// Фото в карточке: на компьютере второе появляется при наведении, на телефоне все листаются пальцем.
+const CARD_IMGS = 5;
+const cardImgs = (imgs) => imgs.slice(0, CARD_IMGS).map((src, i) => `<img src="${esc(src)}" alt="" loading="lazy"${i === 1 ? ' class="card__alt"' : ''} width="1120" height="1493">`).join('');
+const cardDots = (imgs) => (imgs.length > 1 ? `<span class="card__dots" aria-hidden="true">${imgs.slice(0, CARD_IMGS).map((_, i) => `<i${i ? '' : ' class="is-on"'}></i>`).join('')}</span>` : '');
+
 // Карточка как у Represent: фото на всю ячейку, "+" в углу открывает размеры,
 // под фото название и цена в строку, цвет и кружки цветов модели.
 function card(p, order = 0) {
@@ -292,9 +299,9 @@ function card(p, order = 0) {
     data-sizes="${esc(sizes.join('|'))}" data-price="${p.price}" data-order="${order}">
   <div class="card__media">
     <a class="card__img" href="/product/${esc(p.id)}" tabindex="-1" aria-hidden="true">
-      <img src="${esc(p.images[0])}" alt="" loading="lazy" width="1120" height="1493">
-      ${p.images[1] ? `<img class="card__alt" src="${esc(p.images[1])}" alt="" loading="lazy">` : ''}
+      <span class="card__track" data-card-track>${cardImgs(p.images)}</span>
     </a>
+    ${cardDots(p.images)}
     ${soldOut ? '<span class="card__tag card__tag--sold">Sold out</span>' : sizes.length < variants.length ? '<span class="card__tag">Не все размеры</span>' : ''}
     <button class="fav card__fav" type="button" aria-label="В избранное: ${esc(p.title)}" data-fav="${esc(p.id)}">${icon.mark}</button>
     <div class="quick" data-quick>

@@ -10,6 +10,7 @@ import * as orders from './orders.js';
 import * as pages from './pages.js';
 import * as auth from './auth.js';
 import * as leads from './leads.js';
+import * as validate from './validate.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PUBLIC = path.join(ROOT, 'public');
@@ -74,6 +75,12 @@ function limited(req, key, max, windowMs) {
   return arr.length > max;
 }
 
+// Почта с несуществующим доменом (gmail.cm, yandx.ru): письма не дойдут, просим исправить.
+const NO_MAIL = 'На этот адрес письма не доходят: проверьте, нет ли опечатки в почте';
+const badDomain = async (email) => Boolean(validate.email(email)) && !(await validate.emailDomainOk(validate.email(email)));
+// Похоже на опечатку, и покупатель не подтвердил на сайте, что адрес верный.
+const typoError = (email, confirmed) => { const s = !confirmed && validate.email(email) && validate.emailTypo(validate.email(email)); return s ? `Проверьте почту: возможно, вы имели в виду ${s}` : ''; };
+
 async function handle(req, res) {
   const url = new URL(req.url, 'http://localhost');
   const p = url.pathname.replace(/\/+$/, '') || '/';
@@ -90,12 +97,18 @@ async function handle(req, res) {
     if (limited(req, 'order', 20, 3_600_000)) return json(res, 429, { error: 'Слишком много попыток, попробуйте позже' });
     let data;
     try { data = await readJson(req); } catch { return json(res, 400, { error: 'Некорректный запрос' }); }
+    const typoO = typoError(data?.customer?.email, data?.emailConfirmed === true);
+    if (typoO) return json(res, 422, { error: typoO, field: 'email' });
+    if (await badDomain(data?.customer?.email)) return json(res, 422, { error: NO_MAIL, field: 'email' });
     const result = orders.create(data, user);
     return json(res, result.error ? 422 : 201, result);
   }
   if (p === '/api/subscribe' && POST) {
     if (limited(req, 'subscribe', 10, 3_600_000)) return json(res, 429, { error: 'Слишком много попыток, попробуйте позже' });
     let d; try { d = await readJson(req); } catch { return json(res, 400, { error: 'Некорректный запрос' }); }
+    const typoL = typoError(d?.email, d?.emailConfirmed === true);
+    if (typoL) return json(res, 422, { error: typoL, field: 'email' });
+    if (await badDomain(d?.email)) return json(res, 422, { error: NO_MAIL, field: 'email' });
     const r = leads.subscribe(d, user);
     return json(res, r.error ? 422 : 200, r);
   }
@@ -103,6 +116,9 @@ async function handle(req, res) {
     if (limited(req, 'code', 8, 3_600_000)) return json(res, 429, { error: 'Слишком много запросов кода, попробуйте через час' });
     let d; try { d = await readJson(req); } catch { return json(res, 400, { error: 'Некорректный запрос' }); }
     if (d.consent !== true) return json(res, 422, { error: 'Нужно согласие на обработку персональных данных' });
+    const typoA = d.channel === 'email' && typoError(d.to, d.emailConfirmed === true);
+    if (typoA) return json(res, 422, { error: typoA });
+    if (d.channel === 'email' && await badDomain(d.to)) return json(res, 422, { error: NO_MAIL });
     const r = await auth.requestCode(d.channel, d.to);
     return json(res, r.error ? 422 : 200, r);
   }
@@ -119,6 +135,9 @@ async function handle(req, res) {
   if (p === '/api/account/profile' && POST) {
     if (!user) return json(res, 401, { error: 'Нужно войти' });
     let d; try { d = await readJson(req); } catch { return json(res, 400, { error: 'Некорректный запрос' }); }
+    const typoP = d?.email && typoError(d.email, d.emailConfirmed === true);
+    if (typoP) return json(res, 422, { error: typoP });
+    if (d?.email && await badDomain(d.email)) return json(res, 422, { error: NO_MAIL });
     const r = auth.updateProfile(user, d);
     return json(res, r.error ? 422 : 200, r);
   }

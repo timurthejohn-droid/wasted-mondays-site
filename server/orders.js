@@ -9,6 +9,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import * as catalog from './catalog.js';
+import * as validate from './validate.js';
 
 const FILE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../data/orders.json');
 const PAYMENT_TTL_MIN = 20;
@@ -80,8 +81,9 @@ export function create(input, user = null) {
   const delivery = { method: clean(input?.delivery?.method, 20), address: clean(input?.delivery?.address, 300) };
 
   if (customer.name.length < 2) return { error: 'Укажите имя и фамилию' };
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) return { error: 'Проверьте email' };
-  if (customer.phone.replace(/\D/g, '').length < 10) return { error: 'Проверьте телефон' };
+  if (!validate.email(customer.email)) return { error: 'Проверьте email' };
+  customer.phone = validate.phone(customer.phone);
+  if (!customer.phone) return { error: 'Проверьте телефон' };
   const dm = DELIVERY[delivery.method];
   if (!dm) return { error: 'Выберите способ доставки' };
   if (dm.needsAddress && delivery.address.length < 5) return { error: 'Укажите адрес доставки' };

@@ -31,6 +31,134 @@
     clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2800);
   }
 
+  // Телефон: выбор страны с кодом, маска номера, в форму уходит +79991234567.
+  // Почта: строгий формат и подсказка при опечатке в домене (gmial.com → gmail.com).
+  const COUNTRIES = (() => { try { return JSON.parse($('#wm-countries').textContent); } catch { return []; } })();
+  const flag = (iso) => iso.toUpperCase().replace(/./g, (c) => String.fromCodePoint(0x1f1a5 + c.charCodeAt(0)));
+  const phoneRule = (code, n) => COUNTRIES.filter((c) => c[2] === code).find((c) => !c[4] || !n || c[4].includes(n[0])) || COUNTRIES.find((c) => c[2] === code);
+  const phoneValid = (code, n) => {
+    const rules = COUNTRIES.filter((c) => c[2] === code);
+    if (!rules.length) return (code + n).length >= 8 && (code + n).length <= 15;
+    return rules.some(([, , , lens, first]) => lens.includes(n.length) && (!first || first.includes(n[0])));
+  };
+  const maskPhone = (code, n) => {
+    if (code === '7') return n.replace(/^(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2}).*/, (m, a, b, c, d) => [a && `(${a}${a.length === 3 ? ')' : ''}`, b, c && `-${c}`, d && `-${d}`].filter(Boolean).join(' ').replace(' -', '-').replace(' -', '-'));
+    return n.replace(/(\d{3})(?=\d)/g, '$1 ');
+  };
+  function enhancePhone(input) {
+    if (input.readOnly || input.dataset.phoneReady) return;
+    input.dataset.phoneReady = '1';
+    const field = input.closest('.field'), name = input.name;
+    field.classList.add('field--tel');
+    const hidden = document.createElement('input');
+    hidden.type = 'hidden'; hidden.name = name; input.removeAttribute('name'); input.after(hidden);
+    input.setAttribute('inputmode', 'tel'); input.autocomplete = 'tel-national';
+    const pick = document.createElement('div');
+    pick.className = 'tel__pick';
+    pick.innerHTML = `<span data-tel-view></span><select aria-label="Код страны">${COUNTRIES.map(([iso, title, code]) => `<option value="${iso}">${flag(iso)} ${title} +${code}</option>`).join('')}<option value="other">Другая страна</option></select>`;
+    field.prepend(pick);
+    const sel = $('select', pick), view = $('[data-tel-view]', pick);
+    let code = '7';
+    const sync = () => {
+      const other = sel.value === 'other';
+      let d = input.value.replace(/\D/g, '');
+      if (other) { hidden.value = d ? `+${d}` : ''; input.value = d ? `+${d.slice(0, 15)}` : ''; view.textContent = '🌐 +'; width(); return; }
+      if (code === '7' && d.length === 11 && /^[78]/.test(d)) d = d.slice(1);
+      const lens = COUNTRIES.filter((c) => c[2] === code).flatMap((c) => c[3]);
+      d = d.slice(0, Math.max(...lens));
+      input.value = maskPhone(code, d);
+      hidden.value = d ? `+${code}${d}` : '';
+      input.dataset.valid = d && phoneValid(code, d) ? '1' : '';
+      const r = phoneRule(code, d); if (r && sel.value !== r[0] && COUNTRIES.find((c) => c[0] === sel.value)?.[2] === code) sel.value = r[0];
+      view.textContent = `${flag(sel.value)} +${code}`;
+      width();
+    };
+    // Ширина блока с кодом разная (+7 и +375), под неё сдвигаем текст поля.
+    const width = () => { if (pick.offsetWidth) field.style.setProperty('--tel-w', `${pick.offsetWidth}px`); };
+    input.addEventListener('focus', width);
+    // Вставили номер целиком с кодом ("+375 29 ...", "8 999 ..."): сами выбираем страну.
+    const fromFull = (raw) => {
+      let d = String(raw).replace(/\D/g, '');
+      if (!String(raw).trim().startsWith('+') && d.length === 11 && d[0] === '8') d = '7' + d.slice(1);
+      const hit = COUNTRIES.filter((c) => d.startsWith(c[2]) && c[3].includes(d.length - c[2].length)).sort((a, b) => b[2].length - a[2].length)[0];
+      if (!hit) return false;
+      code = hit[2]; sel.value = phoneRule(code, d.slice(code.length))[0]; input.value = d.slice(code.length); return true;
+    };
+    sel.addEventListener('change', () => { if (sel.value !== 'other') code = COUNTRIES.find((c) => c[0] === sel.value)[2]; sync(); input.focus(); });
+    // Начали вводить с "+": пока код не распознан, поле в режиме "Другая страна", потом само переключится.
+    input.addEventListener('input', () => {
+      if (/^\s*\+/.test(input.value) && !fromFull(input.value) && sel.value !== 'other') sel.value = 'other';
+      sync();
+    });
+    input.addEventListener('paste', (e) => { const t = e.clipboardData.getData('text'); if (/^\s*(\+|8\d{10})/.test(t.replace(/[\s()-]/g, '')) && fromFull(t)) { e.preventDefault(); sync(); } });
+    if (input.value) fromFull(input.value.startsWith('+') ? input.value : `+${input.value}`);
+    sync();
+  }
+
+  const MAIL_DOMAINS = ['gmail.com', 'mail.ru', 'yandex.ru', 'ya.ru', 'icloud.com', 'bk.ru', 'inbox.ru', 'list.ru', 'rambler.ru', 'internet.ru', 'outlook.com', 'hotmail.com', 'yahoo.com', 'me.com', 'yandex.com', 'proton.me'];
+  const MAIL_KNOWN = ['gmx.com', 'gmx.de', 'gmx.net', 'live.com', 'msn.com', 'mac.com', 'aol.com', 'mail.ua', 'ukr.net', 'i.ua', 'tut.by', 'yandex.kz', 'yandex.by', 'yandex.ua', 'mail.kz', 'inbox.lv', 'yahoo.co.uk', 'hotmail.co.uk', 'outlook.de', 'web.de'];
+  const MAIL_FIX = { 'gmail.ru': 'gmail.com', 'gmai.ru': 'gmail.com', 'yandex.com.ru': 'yandex.ru', 'yandeх.ru': 'yandex.ru', 'mail.com.ru': 'mail.ru' };
+  const lev = (a, b) => { const m = [...Array(b.length + 1).keys()]; for (let i = 1; i <= a.length; i++) { let p = m[0]; m[0] = i; for (let j = 1; j <= b.length; j++) { const t = m[j]; m[j] = Math.min(m[j] + 1, m[j - 1] + 1, p + (a[i - 1] === b[j - 1] ? 0 : 1)); p = t; } } return m[b.length]; };
+  const emailValid = (e) => /^[a-z0-9._%+-]{1,64}@(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}$/i.test(e) && !/^\.|\.\.|\.@/.test(e);
+  function emailSuggest(e) {
+    const [local, domain] = e.toLowerCase().split('@');
+    if (!domain || MAIL_DOMAINS.includes(domain) || MAIL_KNOWN.includes(domain)) return '';
+    if (MAIL_FIX[domain]) return `${local}@${MAIL_FIX[domain]}`;
+    let best = '', d = 3;
+    for (const x of MAIL_DOMAINS) { const k = lev(domain, x); if (k < d) { d = k; best = x; } }
+    // "gmailcom", "gmail.co", "yandx.ru": близко к популярному домену, но не он.
+    return best && (d <= 2 || domain.replace(/\./g, '') === best.replace(/\./g, '')) ? `${local}@${best}` : '';
+  }
+  // Покупатель нажал «Нет, всё верно» под подсказкой: сервер тогда не переспрашивает про опечатку.
+  const mailConfirmed = (form) => $$('input[type=email]', form).some((i) => i.dataset.ignored && i.dataset.ignored === i.value.trim());
+
+  function fieldHint(input, html) {
+    const field = input.closest('.field');
+    let h = field.nextElementSibling?.classList.contains('field__hint') ? field.nextElementSibling : null;
+    if (!html) { h?.remove(); return; }
+    if (!h) { h = document.createElement('p'); h.className = 'field__hint'; field.after(h); }
+    h.innerHTML = html;
+  }
+  function checkEmail(input, strict) {
+    const v = input.value.trim();
+    input.value = v;
+    if (!v) { fieldHint(input, ''); return true; }
+    if (!emailValid(v)) { fieldHint(input, 'Похоже, в адресе ошибка. Пример: name@gmail.com'); return false; }
+    const s = emailSuggest(v);
+    if (s && input.dataset.ignored !== v) {
+      fieldHint(input, `Возможно, вы имели в виду <button type="button" class="link" data-mail-fix="${esc(s)}">${esc(s)}</button>? <button type="button" class="link link--muted" data-mail-keep>Нет, всё верно</button>`);
+      return !strict;
+    }
+    fieldHint(input, '');
+    return true;
+  }
+  document.addEventListener('click', (e) => {
+    const fix = e.target.closest('[data-mail-fix]'), keep = e.target.closest('[data-mail-keep]');
+    if (!fix && !keep) return;
+    const input = $('input[type=email]', e.target.closest('.field__hint').previousElementSibling);
+    if (fix) input.value = fix.dataset.mailFix; else input.dataset.ignored = input.value;
+    fieldHint(input, ''); input.classList.remove('is-invalid');
+  });
+  document.addEventListener('focusout', (e) => { if (e.target.matches?.('input[type=email]:not([readonly])')) checkEmail(e.target, false); });
+
+  // Перед отправкой любой формы: почта и телефон в видимых полях должны быть правильными.
+  // Слушаем на document в фазе перехвата, поэтому это срабатывает раньше обработчиков самих форм.
+  document.addEventListener('submit', (e) => {
+    const form = e.target;
+    const visible = (i) => !i.closest('[hidden]') && !i.readOnly;
+    let bad = null;
+    for (const i of $$('input[type=email]', form).filter(visible)) if (!checkEmail(i, true) && !bad) bad = i;
+    for (const i of $$('input[data-phone-ready]', form).filter(visible)) {
+      const empty = !i.value.trim(), other = $('select', i.closest('.field')).value === 'other';
+      const ok = empty ? !i.required : other ? /^\+\d{8,15}$/.test(i.value.replace(/\s/g, '')) : i.dataset.valid === '1';
+      fieldHint(i, ok ? '' : empty ? 'Укажите телефон' : 'Проверьте номер: не хватает цифр или неверный код страны');
+      if (!ok && !bad) bad = i;
+    }
+    if (bad) { e.preventDefault(); e.stopImmediatePropagation(); bad.classList.add('is-invalid'); bad.focus(); }
+  }, true);
+  $$('input[type=tel]').forEach(enhancePhone);
+  $$('input[type=email]').forEach((i) => { i.setAttribute('inputmode', 'email'); i.autocapitalize = 'off'; i.spellcheck = false; });
+
   // Каталог подгружаем один раз и только когда нужен.
   let productsPromise;
   const products = () => (productsPromise ??= fetch(STATIC ? `${B}/api/products.json` : '/api/products').then((r) => r.json())
@@ -266,7 +394,8 @@
     const n = sibs.length || 1;
     const tag = !sizes.length ? '<span class="card__tag card__tag--sold">Sold out</span>' : sizes.length < p.variants.length ? '<span class="card__tag">Не все размеры</span>' : '';
     return `<article class="card${sizes.length ? '' : ' is-soldout'}" data-id="${esc(p.id)}">
-      <div class="card__media"><a class="card__img" href="${B}/product/${esc(p.id)}" tabindex="-1"><img src="${esc(p.images[0])}" alt="" loading="lazy">${p.images[1] ? `<img class="card__alt" src="${esc(p.images[1])}" alt="" loading="lazy">` : ''}</a>
+      <div class="card__media"><a class="card__img" href="${B}/product/${esc(p.id)}" tabindex="-1"><span class="card__track" data-card-track>${p.images.slice(0, 5).map((src, i) => `<img src="${esc(src)}" alt="" loading="lazy"${i === 1 ? ' class="card__alt"' : ''}>`).join('')}</span></a>
+        ${p.images.length > 1 ? `<span class="card__dots" aria-hidden="true">${p.images.slice(0, 5).map((_, i) => `<i${i ? '' : ' class="is-on"'}></i>`).join('')}</span>` : ''}
         ${tag}
         <button class="fav card__fav" type="button" aria-label="В избранное" data-fav="${esc(p.id)}">${markSvg}</button>
         <div class="quick" data-quick><button class="quick__plus" type="button" aria-label="Выбрать размер" aria-expanded="false" data-quick-toggle>${plusSvg}</button>
@@ -297,6 +426,14 @@
     }
     if (!e.target.closest('[data-quick]')) $$('[data-quick].is-open').forEach((x) => x.classList.remove('is-open'));
   });
+
+  // Листание фото в карточке пальцем: полоски внизу показывают, какое фото открыто.
+  document.addEventListener('scroll', (e) => {
+    const t = e.target;
+    if (!t.matches?.('[data-card-track]')) return;
+    const i = Math.round(t.scrollLeft / t.clientWidth);
+    $$('.card__dots i', t.closest('.card__media')).forEach((d, k) => d.classList.toggle('is-on', k === i));
+  }, true);
 
   // Вы недавно смотрели
   const pdp = $('[data-product]');
@@ -524,7 +661,7 @@
   if (authForm) {
     const err = $('[data-auth-error]', authForm);
     const step = (n) => $$('[data-step]', authForm).forEach((s) => { s.hidden = s.dataset.step !== String(n); });
-    const target = () => (authForm.dataset.channel === 'email' ? $('#a-email').value : $('#a-phone').value);
+    const target = () => (authForm.dataset.channel === 'email' ? $('#a-email').value : authForm.elements.phone.value);
     const showErr = (m) => { err.textContent = m; err.hidden = !m; };
     $$('[data-auth-tab]').forEach((t) => t.addEventListener('click', () => {
       authForm.dataset.channel = t.dataset.authTab;
@@ -541,7 +678,7 @@
       try {
         if (onStep1) {
           if (!authForm.elements.consent.checked) throw new Error('Нужно согласие на обработку персональных данных');
-          const r = await post('/api/auth/code', { channel: authForm.dataset.channel, to: target(), consent: true });
+          const r = await post('/api/auth/code', { channel: authForm.dataset.channel, to: target(), consent: true, emailConfirmed: mailConfirmed(authForm) });
           $('[data-sent]', authForm).textContent = `Код отправлен на ${r.to}`;
           const test = $('[data-test-code]', authForm);
           test.hidden = !r.testCode;
@@ -564,7 +701,7 @@
     e.preventDefault();
     const msg = $('[data-profile-msg]'), f = new FormData(profile);
     try {
-      await post('/api/account/profile', { name: f.get('name'), email: f.get('email'), phone: f.get('phone'), address: f.get('address') });
+      await post('/api/account/profile', { name: f.get('name'), email: f.get('email'), phone: f.get('phone'), address: f.get('address'), emailConfirmed: mailConfirmed(profile) });
       msg.style.color = 'inherit'; msg.textContent = 'Сохранено';
     } catch (ex) { msg.style.color = ''; msg.textContent = ex.message; }
     msg.hidden = false;
@@ -649,8 +786,7 @@
       const f = new FormData(form);
       const bad = [];
       if (String(f.get('name')).trim().length < 2) bad.push('name');
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(f.get('email')).trim())) bad.push('email');
-      if (String(f.get('phone')).replace(/\D/g, '').length < 10) bad.push('phone');
+      if (!String(f.get('email')).trim()) bad.push('email');
       if (!addr.hidden && String(f.get('address')).trim().length < 5) bad.push('address');
       if (bad.length) {
         bad.forEach((n) => form.elements[n].classList.add('is-invalid'));
@@ -666,7 +802,7 @@
           items: cart.items().map((l) => ({ ...l, preorder: isPre(byId, l) })),
           customer: { name: f.get('name'), email: f.get('email'), phone: f.get('phone'), comment: f.get('comment'), newsletter: !!f.get('newsletter') },
           delivery: { method: f.get('delivery'), address: f.get('address') || '' },
-          consent: true,
+          consent: true, emailConfirmed: mailConfirmed(form),
         });
         location.href = `${B}/order/${res.id}`;
       } catch (ex) {
@@ -720,13 +856,12 @@
       const f = new FormData(form), email = String(f.get('email')).trim(), phone = String(f.get('phone')).trim();
       const fail = (m, field) => { err.textContent = m; err.hidden = false; if (field) { form.elements[field].classList.add('is-invalid'); form.elements[field].focus(); } };
       $$('.is-invalid', form).forEach((i) => i.classList.remove('is-invalid')); err.hidden = true;
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail('Проверьте почту', 'email');
-      if (phone && phone.replace(/\D/g, '').length < 10) return fail('Проверьте телефон или оставьте поле пустым', 'phone');
+      if (!email) return fail('Укажите почту', 'email');
       if (!f.get('consent')) return fail('Нужно согласие на обработку персональных данных');
       const btn = $('button[type=submit]', form);
       btn.disabled = true;
       try {
-        await post('/api/subscribe', { email, phone, consent: true, source: box.closest('[data-lead]') ? 'popup' : 'collections', page: location.pathname });
+        await post('/api/subscribe', { email, phone, consent: true, emailConfirmed: mailConfirmed(form), source: box.closest('[data-lead]') ? 'popup' : 'collections', page: location.pathname });
         store.set('wm_lead', { done: true, at: Date.now() });
         form.hidden = true; $('[data-lead-done]', box).hidden = false;
       } catch (ex) { fail(ex.message); }

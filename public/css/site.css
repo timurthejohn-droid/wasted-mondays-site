@@ -249,7 +249,23 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .card__media { position: relative; aspect-ratio: 3 / 4; background: #f3f3f3; overflow: hidden; }
 .card__img { display: block; width: 100%; height: 100%; }
 .card__img img { width: 100%; height: 100%; object-fit: cover; transition: opacity .45s ease; }
+.card__track { position: relative; display: block; width: 100%; height: 100%; }
+.card__track img:nth-child(n+3) { display: none; }
 .card__alt { position: absolute; inset: 0; opacity: 0; }
+.card__dots { display: none; }
+/* Сенсорный экран: фото карточки листаются пальцем, как у Twojeys */
+@media (hover: none) {
+  .card__track { display: flex; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .card__track::-webkit-scrollbar { display: none; }
+  .card__track img, .card__track img:nth-child(n+3) { display: block; flex: 0 0 100%; position: static; opacity: 1; scroll-snap-align: start; scroll-snap-stop: always; }
+  .card__dots { position: absolute; left: 50%; bottom: 10px; z-index: 1; display: flex; gap: 4px; transform: translateX(-50%); pointer-events: none; }
+  .card__dots i { width: 14px; height: 2px; background: rgba(0,0,0,.18); transition: background .2s; }
+  .card__dots i.is-on { background: var(--ink); }
+  /* В горизонтальных лентах листается сама лента, фото в карточке одно */
+  .rail .card__track { overflow: hidden; }
+  .rail .card__dots { display: none; }
+}
+.shop__head .btn { white-space: nowrap; }
 .card__tag { position: absolute; left: 14px; top: 14px; font-size: 11px; color: var(--ink); }
 /* Sold out: заметно, но без крика, как у Aimé Leon Dore. Фото не гасим, вещь всё ещё продаётся по предзаказу. */
 .card__tag--sold, .sold-tag { display: inline-block; padding: 4px 8px 3px; background: var(--ink); color: var(--paper); font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; line-height: 1.3; }
@@ -457,6 +473,15 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .field { position: relative; margin-bottom: 12px; }
 .field input, .field textarea { width: 100%; padding: 24px 14px 8px; border: 1px solid var(--line-strong); border-radius: 0; background: var(--paper); font-size: 16px; }
+/* Телефон: слева выбор страны (флаг и код), нативный список поверх, поэтому на телефоне открывается удобный системный выбор */
+.field--tel .tel__pick { position: absolute; left: 1px; top: 1px; bottom: 1px; z-index: 1; display: flex; align-items: center; gap: 4px; padding: 0 10px 0 14px; border-right: 1px solid var(--line); font-size: 15px; white-space: nowrap; cursor: pointer; }
+.field--tel .tel__pick::after { content: ''; width: 6px; height: 6px; margin-left: 4px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg) translateY(-2px); }
+.field--tel .tel__pick select { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; font-size: 16px; }
+.field--tel input { padding-left: calc(var(--tel-w, 84px) + 12px); }
+.field.field--tel > label { left: calc(var(--tel-w, 84px) + 13px); }
+.field__hint { margin: -6px 0 12px; font-size: 12px; line-height: 1.45; color: var(--error); }
+.field__hint .link { font-size: 12px; color: var(--ink); }
+.field__hint .link--muted { margin-left: 6px; color: var(--muted); }
 .field input[readonly] { background: var(--soft); color: var(--muted); }
 .field textarea { resize: vertical; min-height: 96px; }
 .field label { position: absolute; left: 15px; top: 17px; font-size: 15px; color: var(--muted); pointer-events: none; transition: all .15s; }
@@ -662,7 +687,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
   .perks a:not(.is-active), .perks i { display: none; }
   .cats--3, .cats--4 { grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .plp__body { grid-template-columns: 1fr; }
-  .plp__bar { justify-content: space-between; }
+  .plp__bar { justify-content: space-between; position: sticky; top: var(--hdr); z-index: 20; margin: 0 calc(var(--gutter) * -1) 16px; padding: 10px var(--gutter); background: var(--paper); }
   .plp__filters-btn { display: inline-flex; }
   .drawer--filters { position: fixed; z-index: 60; background: rgba(0,0,0,0); }
   .drawer--filters:not(.is-shown) { display: none; }

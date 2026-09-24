@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import * as validate from './validate.js';
 
 const FILE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../data/subscribers.json');
 let list = (() => { try { return JSON.parse(fs.readFileSync(FILE, 'utf8')); } catch { return []; } })();
@@ -16,10 +17,11 @@ function save() {
 const clean = (v, max) => String(v ?? '').trim().slice(0, max);
 
 export function subscribe(input, user = null) {
-  const email = clean(input?.email, 120).toLowerCase();
-  const phone = clean(input?.phone, 30);
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'Проверьте почту' };
-  if (phone && phone.replace(/\D/g, '').length < 10) return { error: 'Проверьте телефон или оставьте поле пустым' };
+  const email = validate.email(input?.email);
+  const rawPhone = clean(input?.phone, 30);
+  const phone = rawPhone ? validate.phone(rawPhone) : '';
+  if (!email) return { error: 'Проверьте почту' };
+  if (phone === null) return { error: 'Проверьте телефон или оставьте поле пустым' };
   if (input?.consent !== true) return { error: 'Нужно согласие на обработку персональных данных' };
   const now = new Date().toISOString();
   const found = list.find((s) => s.email === email);
