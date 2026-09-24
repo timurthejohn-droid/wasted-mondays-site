@@ -309,30 +309,47 @@
     });
   }
 
-  // Мини-корзина справа
+  // Мини-корзина справа: количество и удаление прямо в ней, название и фото ведут в карточку.
   async function showBag(added) {
-    const body = $('[data-bag-body]'), foot = $('[data-bag-foot]'), recs = $('[data-bag-recs]');
     $('[data-bag-title]').textContent = added ? 'Добавлено в корзину' : 'Корзина';
-    body.innerHTML = '<p class="empty">Загрузка…</p>';
+    $('[data-bag-body]').innerHTML = '<p class="empty">Загрузка…</p>';
     openDrawer('bag');
-    const byId = await products();
-    const items = cart.items().filter((l) => byId[l.productId]);
-    if (!items.length) { body.innerHTML = '<p class="empty">Корзина пуста.</p>'; foot.hidden = true; recs.hidden = true; return; }
+    renderBag(await products());
+  }
+  function renderBag(byId) {
+    const body = $('[data-bag-body]'), foot = $('[data-bag-foot]'), recs = $('[data-bag-recs]');
+    const all = cart.items();
+    const lines = all.map((l, i) => ({ l, i })).filter(({ l }) => byId[l.productId]);
+    if (!lines.length) { body.innerHTML = '<p class="empty">Корзина пуста.</p>'; foot.hidden = true; recs.hidden = true; return; }
     let total = 0;
-    body.innerHTML = items.map((l) => {
+    body.innerHTML = lines.map(({ l, i }) => {
       const p = byId[l.productId], v = p.variants.find((x) => x.size === l.size) || { price: p.price };
+      const url = `${B}/product/${esc(p.id)}`;
       total += v.price * l.qty;
-      return `<div class="mini"><img src="${esc(p.images[0])}" alt="">
-        <div><p class="mini__brand">Wasted Mondays</p><p class="mini__meta">${esc(model(p.title))}</p>
-        <p class="mini__meta">Размер ${esc(l.size)} · ${l.qty} шт.</p><p class="mini__price">${money(v.price * l.qty)}</p></div></div>`;
+      return `<div class="mini"><a href="${url}" tabindex="-1"><img src="${esc(p.images[0])}" alt=""></a>
+        <div><p class="mini__brand">Wasted Mondays</p><a class="mini__title" href="${url}">${esc(model(p.title))}</a>
+        <p class="mini__meta">Размер ${esc(l.size)}</p><p class="mini__price">${money(v.price * l.qty)}</p>
+        <div class="mini__actions"><div class="qty qty--sm"><button type="button" data-bag-dec="${i}" aria-label="Меньше">−</button><span>${l.qty}</span><button type="button" data-bag-inc="${i}" aria-label="Больше"${l.qty >= 5 ? ' disabled' : ''}>+</button></div>
+        <button class="link mini__rm" type="button" data-bag-rm="${i}">Удалить</button></div></div></div>`;
     }).join('');
     $('[data-bag-total]').textContent = money(total);
     foot.hidden = false;
-    const inCart = new Set(items.map((l) => l.productId));
+    const inCart = new Set(lines.map(({ l }) => l.productId));
     const others = Object.values(byId).filter((p) => !inCart.has(p.id) && p.variants.some((v) => v.inStock)).slice(0, 3);
     recs.hidden = !others.length;
     $('[data-bag-recs-list]').innerHTML = others.map((p) => `<a href="${B}/product/${esc(p.id)}"><img src="${esc(p.images[0])}" alt="">${esc(model(p.title))}<br><b>${money(p.price)}</b></a>`).join('');
   }
+  $('[data-bag-body]')?.addEventListener('click', async (e) => {
+    const t = e.target.closest('button');
+    if (!t) return;
+    const items = cart.items(), d = t.dataset;
+    if (d.bagInc) items[+d.bagInc].qty = Math.min(5, items[+d.bagInc].qty + 1);
+    else if (d.bagDec) { const n = +d.bagDec; items[n].qty > 1 ? items[n].qty-- : items.splice(n, 1); }
+    else if (d.bagRm) items.splice(+d.bagRm, 1);
+    else return;
+    cart.save(items);
+    renderBag(await products());
+  });
   if (!$('[data-checkout]')) {
     $('[data-bag-link]')?.addEventListener('click', (e) => { e.preventDefault(); showBag(false); });
     $('[data-fab]')?.addEventListener('click', (e) => { e.preventDefault(); showBag(false); });
