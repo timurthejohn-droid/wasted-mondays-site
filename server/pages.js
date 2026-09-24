@@ -200,6 +200,30 @@ ${body}
   </div>
 </div>
 <div class="toast" data-toast role="status" hidden></div>
+<div class="lead" data-lead hidden>
+  <div class="lead__box" role="dialog" aria-modal="true" aria-labelledby="lead-title">
+    <div class="lead__body">
+      <form class="lead__form" data-lead-form novalidate>
+        <p class="eyebrow">Drop 02</p>
+        <h2 id="lead-title">Ранний доступ к дропу</h2>
+        <p class="lead__text">Дроп 01 разошёлся за 48 часов. Оставьте почту, и мы пришлём закрытую ссылку на дроп 02 раньше, чем он откроется для всех.</p>
+        <div class="field"><input id="l-email" name="email" type="email" autocomplete="email" placeholder=" " required><label for="l-email">Почта</label></div>
+        <div class="field"><input id="l-phone" name="phone" type="tel" autocomplete="tel" placeholder=" "><label for="l-phone">Телефон для SMS в день дропа, по желанию</label></div>
+        <label class="checkbox"><input type="checkbox" name="consent" required><span>Согласен(-на) на обработку персональных данных и получение писем по <a href="/policy" target="_blank">политике конфиденциальности</a></span></label>
+        <p class="form-error" data-lead-error role="alert" hidden></p>
+        <button class="btn btn--block btn--lg" type="submit">Получить доступ</button>
+      </form>
+      <div class="lead__done" data-lead-done hidden>
+        <p class="eyebrow">Drop 02</p>
+        <h2>Вы в списке</h2>
+        <p class="lead__text">Ссылку на дроп 02 пришлём на почту до открытия продаж. Анонсы и закулисье пока в <a href="${TG_CHANNEL}" target="_blank" rel="noopener">Телеграме</a>.</p>
+        <button class="btn btn--block btn--ghost" type="button" data-lead-close>Продолжить покупки</button>
+      </div>
+    </div>
+    <div class="lead__media"><img src="/img/products/wasted-applique-hoodie/01.jpg" alt="" loading="lazy"></div>
+    <button class="icon-btn lead__close" type="button" aria-label="Закрыть" data-lead-close>${icon.close}</button>
+  </div>
+</div>
 <script src="/js/site.js" defer></script>
 </body>
 </html>`;

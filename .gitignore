@@ -1,5 +1,6 @@
 data/orders.json
 data/users.json
+data/subscribers.json
 data/*.tmp
 node_modules/
 .DS_Store

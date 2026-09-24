@@ -673,5 +673,58 @@
     render();
   }
 
+  // Попап "Ранний доступ к дропу": через 20 секунд или на второй странице, что раньше.
+  // Закрыли: не показываем 14 дней. Подписались: больше не показываем.
+  const lead = $('[data-lead]');
+  const LEAD_PAUSE = 14 * 864e5;
+  const leadState = store.get('wm_lead', {});
+  const skipLead = $('[data-checkout]') || /\/(order|account)(\/|$)/.test(location.pathname)
+    || leadState.done || (leadState.closedAt && Date.now() - leadState.closedAt < LEAD_PAUSE);
+  if (lead && !skipLead) {
+    let pages = 0;
+    try { pages = Number(sessionStorage.getItem('wm_pages') || 0) + 1; sessionStorage.setItem('wm_pages', pages); } catch {}
+    let leadFocus = null;
+    const openLead = () => {
+      // Не перебиваем открытую корзину, меню или поиск: попробуем позже.
+      if ($('.drawer.is-open, .sheet.is-open') || !$('[data-search]').hidden) { setTimeout(openLead, 8000); return; }
+      leadFocus = document.activeElement;
+      lead.hidden = false;
+      requestAnimationFrame(() => requestAnimationFrame(() => lead.classList.add('is-open')));
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => $('#l-email', lead).focus({ preventScroll: true }), 350);
+    };
+    const closeLead = () => {
+      if (!lead.classList.contains('is-open')) return;
+      lead.classList.remove('is-open');
+      document.body.style.overflow = '';
+      setTimeout(() => { lead.hidden = true; }, 400);
+      const st = store.get('wm_lead', {});
+      if (!st.done) store.set('wm_lead', { ...st, closedAt: Date.now() });
+      leadFocus?.focus?.({ preventScroll: true });
+    };
+    setTimeout(openLead, pages >= 2 ? 2500 : 20000);
+    lead.addEventListener('click', (e) => { if (e.target === lead || e.target.closest('[data-lead-close]')) closeLead(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLead(); });
+
+    const form = $('[data-lead-form]', lead), err = $('[data-lead-error]', lead);
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = new FormData(form), email = String(f.get('email')).trim(), phone = String(f.get('phone')).trim();
+      const fail = (m, field) => { err.textContent = m; err.hidden = false; if (field) { form.elements[field].classList.add('is-invalid'); form.elements[field].focus(); } };
+      $$('.is-invalid', form).forEach((i) => i.classList.remove('is-invalid')); err.hidden = true;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail('Проверьте почту', 'email');
+      if (phone && phone.replace(/\D/g, '').length < 10) return fail('Проверьте телефон или оставьте поле пустым', 'phone');
+      if (!f.get('consent')) return fail('Нужно согласие на обработку персональных данных');
+      const btn = $('button[type=submit]', form);
+      btn.disabled = true;
+      try {
+        await post('/api/subscribe', { email, phone, consent: true, source: 'popup', page: location.pathname });
+        store.set('wm_lead', { done: true, at: Date.now() });
+        form.hidden = true; $('[data-lead-done]', lead).hidden = false;
+      } catch (ex) { fail(ex.message); }
+      btn.disabled = false;
+    });
+  }
+
   renderBadges();
 })();

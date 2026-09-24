@@ -9,6 +9,7 @@ import * as catalog from './catalog.js';
 import * as orders from './orders.js';
 import * as pages from './pages.js';
 import * as auth from './auth.js';
+import * as leads from './leads.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PUBLIC = path.join(ROOT, 'public');
@@ -91,6 +92,12 @@ async function handle(req, res) {
     try { data = await readJson(req); } catch { return json(res, 400, { error: 'Некорректный запрос' }); }
     const result = orders.create(data, user);
     return json(res, result.error ? 422 : 201, result);
+  }
+  if (p === '/api/subscribe' && POST) {
+    if (limited(req, 'subscribe', 10, 3_600_000)) return json(res, 429, { error: 'Слишком много попыток, попробуйте позже' });
+    let d; try { d = await readJson(req); } catch { return json(res, 400, { error: 'Некорректный запрос' }); }
+    const r = leads.subscribe(d, user);
+    return json(res, r.error ? 422 : 200, r);
   }
   if (p === '/api/auth/code' && POST) {
     if (limited(req, 'code', 8, 3_600_000)) return json(res, 429, { error: 'Слишком много запросов кода, попробуйте через час' });
