@@ -217,7 +217,7 @@
     };
     function schedule(ms) {
       clearTimeout(timer); left = ms; started = Date.now();
-      if (!paused && !reduced) timer = setTimeout(() => go(i + 1), ms);
+      if (!paused) timer = setTimeout(() => go(i + 1), ms);
     }
     function pause(on) {
       if (on === paused) return;
@@ -227,8 +227,7 @@
     $('[data-hero-next]', hero).addEventListener('click', () => go(i + 1));
     $('[data-hero-prev]', hero).addEventListener('click', () => go(i - 1));
     bars.forEach((b) => b.addEventListener('click', () => go(+b.dataset.go)));
-    hero.addEventListener('mouseenter', () => pause(true));
-    hero.addEventListener('mouseleave', () => pause(false));
+    // Паузы при наведении нет: баннер на весь экран, курсор почти всегда над ним, и фото стояли бы.
     document.addEventListener('visibilitychange', () => pause(document.hidden));
     let x0 = null, y0 = null;
     hero.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
@@ -237,7 +236,6 @@
       const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; x0 = null;
       if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) go(i + (dx < 0 ? 1 : -1));
     });
-    if (reduced) hero.classList.add('is-paused');
     go(0);
   }
 
