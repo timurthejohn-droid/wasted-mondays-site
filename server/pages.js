@@ -60,7 +60,11 @@ function layout({ title, body, bodyClass = '', user = null }) {
   return `<!doctype html>
 <html lang="ru">
 <head>
-<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex,notranslate">
+<meta name="googlebot" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
+<meta name="yandex" content="noindex,nofollow,noarchive">
+<meta name="bingbot" content="noindex,nofollow,noarchive,nosnippet">
+<meta name="referrer" content="no-referrer">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
@@ -605,7 +609,7 @@ export function orderDone(o, user) {
 }
 
 export function info(name, title, user) {
-  const html = fs.readFileSync(path.join(DATA, 'pages', `${name}.html`), 'utf8');
+  const html = fs.readFileSync(path.join(DATA, 'pages', `${name}.frag`), 'utf8');
   const body = `<section class="info info--${name}">
   ${crumbs([['Главная', '/'], [title, '']])}
   <h1>${esc(title)}</h1>
