@@ -402,6 +402,32 @@
     };
     $('[data-gzoom]').addEventListener('click', () => openZoom(cur()));
     track.addEventListener('click', (e) => { if (e.target.matches('img') && !matchMedia('(max-width: 900px)').matches) openZoom(cur()); });
+    // Панель "Описание / Доставка и возврат"
+    const sheet = $('[data-sheet]');
+    let sheetFrom = null;
+    const sheetTab = (name) => {
+      $$('[data-sheet-tab]', sheet).forEach((t) => t.setAttribute('aria-selected', String(t.dataset.sheetTab === name)));
+      $$('[data-sheet-body]', sheet).forEach((b) => { b.hidden = b.dataset.sheetBody !== name; });
+    };
+    const openSheet = (name) => {
+      sheetFrom = document.activeElement;
+      sheetTab(name); sheet.hidden = false;
+      requestAnimationFrame(() => requestAnimationFrame(() => sheet.classList.add('is-open')));
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => $('[data-sheet-close]', sheet).focus({ preventScroll: true }), 60);
+    };
+    const closeSheet = () => {
+      if (!sheet.classList.contains('is-open')) return;
+      sheet.classList.remove('is-open'); document.body.style.overflow = '';
+      setTimeout(() => { sheet.hidden = true; }, 450);
+      sheetFrom?.focus?.({ preventScroll: true });
+    };
+    $$('[data-sheet-open]').forEach((b) => b.addEventListener('click', () => openSheet(b.dataset.sheetOpen)));
+    $$('[data-sheet-tab]', sheet).forEach((t) => t.addEventListener('click', () => sheetTab(t.dataset.sheetTab)));
+    $('[data-sheet-close]', sheet).addEventListener('click', closeSheet);
+    sheet.addEventListener('click', (e) => { if (e.target === sheet) closeSheet(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheet(); });
+
     const sizes = $('.sizes', pdp), hint = $('[data-size-hint]', pdp);
     const picked = () => $('input[name=size]:checked', pdp)?.value;
     // Если в наличии один размер, выбираем его сразу.

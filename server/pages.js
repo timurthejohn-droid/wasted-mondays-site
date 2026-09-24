@@ -440,7 +440,7 @@ export function product(p, user) {
   const anyAvail = variants.some((v) => v.left > 0);
   const cat = p.category[0];
   const sibs = catalog.siblings(p);
-  // "С этим носят": сначала вещи из других категорий, к худи штаны и футболки.
+  // "Вам может понравиться": все остальные товары, сначала из других категорий.
   const others = catalog.all().filter((x) => x.group !== p.group)
     .sort((a, b) => Number(a.category.includes(cat)) - Number(b.category.includes(cat)));
   const body = `
@@ -490,18 +490,34 @@ export function product(p, user) {
       </ul>
 
       <div class="pdp__more">
-        <details class="more">
-          <summary>${icon.plus}<span>Описание</span></summary>
-          <div class="more__body rich">${p.description}</div>
-        </details>
-        <details class="more">
-          <summary>${icon.plus}<span>Доставка и возврат</span></summary>
-          <div class="more__body rich">
-            <p><b>Самовывоз в Санкт-Петербурге:</b> ${PICKUP}.</p>
-            <p><b>По России:</b> курьером до двери или до пункта выдачи, способ выбирается при оформлении. Обработка заказа занимает до 4 дней.</p>
-            <p>Условия возврата: <a href="/return">Возврат товара</a>. Подробнее о доставке: <a href="/delivery">Доставка</a>.</p>
-          </div>
-        </details>
+        <button class="more-btn" type="button" data-sheet-open="desc">${icon.plus}<span>Описание</span></button>
+        <button class="more-btn" type="button" data-sheet-open="ship">${icon.plus}<span>Доставка и возврат</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet" data-sheet hidden>
+    <div class="sheet__panel" role="dialog" aria-modal="true" aria-label="Подробнее о товаре">
+      <div class="sheet__head">
+        <div class="sheet__tabs" role="tablist">
+          <button type="button" role="tab" data-sheet-tab="desc">Описание</button>
+          <button type="button" role="tab" data-sheet-tab="ship">Доставка и возврат</button>
+        </div>
+        <button class="icon-btn" type="button" aria-label="Закрыть" data-sheet-close>${icon.close}</button>
+      </div>
+      <div class="sheet__body rich" data-sheet-body="desc">
+        <p class="sheet__title">${esc(model(p.title))}</p>
+        ${p.description}
+        <p class="sheet__meta">Цвет: ${esc(p.color?.name || '')}<br>Размеры: ${variants.map((v) => esc(v.size)).join(', ')}</p>
+      </div>
+      <div class="sheet__body rich" data-sheet-body="ship" hidden>
+        <p class="sheet__title">Доставка</p>
+        <p><b>Самовывоз в Санкт-Петербурге:</b> ${PICKUP}.</p>
+        <p><b>По России:</b> курьером до двери или до пункта выдачи, способ выбирается при оформлении.</p>
+        <p>Обработка заказа занимает до 4 дней. <a href="/delivery">Подробнее о доставке</a></p>
+        <p class="sheet__title">Возврат</p>
+        <p>Условия и порядок возврата описаны на странице <a href="/return">Возврат товара</a>.</p>
+        <p>Вопросы по заказу и размеру: <a href="${TG_MANAGER}" target="_blank" rel="noopener">менеджер в Телеграме</a>.</p>
       </div>
     </div>
   </div>
@@ -510,10 +526,7 @@ export function product(p, user) {
   <div><b>${esc(model(p.title))}</b><span>${money(p.price)}</span></div>
   <button class="btn" type="button" data-buybar-add ${anyAvail ? '' : 'disabled'}>${anyAvail ? 'В корзину' : 'Нет в наличии'}</button>
 </div>
-${others.length ? `<section class="shop shop--center">
-  <div class="shop__head"><h2>С этим носят</h2></div>
-  <div class="pgrid">${others.slice(0, 4).map(card).join('')}</div>
-</section>` : ''}
+${others.length ? rail({ title: 'Вам может понравиться', items: others.map(card).join(''), link: '/catalog' }) : ''}
 <section class="shop shop--center" data-recent hidden>
   <div class="shop__head"><h2>Вы недавно смотрели</h2></div>
   <div class="pgrid" data-recent-list></div>

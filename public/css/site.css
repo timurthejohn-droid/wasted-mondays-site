@@ -375,13 +375,31 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .pdp__perks { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
 .pdp__perks li { display: grid; grid-template-columns: 44px 1fr; align-items: center; font-size: 12px; }
 .pdp__perks span { font-size: 9px; font-weight: 700; letter-spacing: .06em; color: var(--muted); }
-.pdp__more { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; padding-top: 18px; border-top: 1px solid var(--line); }
-.more summary { display: flex; align-items: center; gap: 10px; padding: 8px 0; cursor: pointer; list-style: none; font-size: 12px; font-weight: 600; }
-.more summary::-webkit-details-marker { display: none; }
-.more summary svg { width: 14px; height: 14px; transition: transform .25s; }
-.more[open] summary svg { transform: rotate(45deg); }
-.more[open] { grid-column: 1 / -1; order: -1; }
-.more__body { padding: 6px 0 16px; }
+.pdp__more { display: flex; gap: 32px; padding-top: 18px; border-top: 1px solid var(--line); }
+.more-btn { display: inline-flex; align-items: center; gap: 10px; padding: 8px 0; border: 0; background: none; cursor: pointer; font-size: 12px; font-weight: 600; text-align: left; }
+.more-btn svg { width: 14px; height: 14px; transition: transform .25s; }
+.more-btn:hover svg { transform: rotate(90deg); }
+
+/* Панель "Описание / Доставка и возврат": выезжает снизу поверх правой колонки, как у Represent */
+.sheet { position: fixed; inset: 0; z-index: 55; background: rgba(0,0,0,0); transition: background .35s; }
+.sheet.is-open { background: rgba(0,0,0,.25); }
+.sheet__panel { position: absolute; right: 0; bottom: 0; width: 50%; height: calc(100svh - var(--hdr) - var(--perks)); background: var(--paper); display: flex; flex-direction: column; transform: translateY(100%); transition: transform .45s var(--ease); box-shadow: 0 -10px 40px rgba(0,0,0,.08); }
+.sheet.is-open .sheet__panel { transform: none; }
+.sheet__head { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 14px 20px 0 max(24px, calc((50vw - 470px) / 2)); border-bottom: 1px solid var(--line); }
+.sheet__tabs { display: flex; gap: 28px; }
+.sheet__tabs button { padding: 14px 0; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--muted); }
+.sheet__tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+.sheet__body { flex: 1; overflow-y: auto; padding: 28px max(24px, calc((50vw - 470px) / 2)) 48px; animation: fade .35s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(8px); } }
+.sheet__title { font-size: 13px; font-weight: 600; color: var(--ink); margin: 0 0 12px; }
+.sheet__title:not(:first-child) { margin-top: 28px; }
+.sheet__meta { margin-top: 20px !important; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .sheet, .sheet__panel { transition: none; } .sheet__body { animation: none; } }
+@media (max-width: 900px) {
+  .sheet__panel { width: 100%; height: 85svh; }
+  .sheet__head, .sheet__body { padding-left: var(--gutter); padding-right: var(--gutter); }
+  .sheet__head { padding-right: 8px; }
+}
 .rich { font-size: 12px; line-height: 1.65; color: #3a3a3a; }
 .rich p + p { margin-top: 8px; }
 .buybar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px var(--gutter) calc(12px + env(safe-area-inset-bottom)); background: var(--paper); border-top: 1px solid var(--line); transform: translateY(100%); transition: transform .35s var(--ease); }
