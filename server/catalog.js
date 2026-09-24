@@ -42,7 +42,7 @@ export function categories() {
 // Что отдаём браузеру: без точных остатков, только "есть / нет".
 export function publicList() {
   return load().map((p) => ({
-    id: p.id, title: p.title, price: p.price, images: p.images, category: p.category,
+    id: p.id, title: p.title, price: p.price, images: p.images, category: p.category, color: p.color, group: p.group,
     variants: p.variants.map((v) => ({ size: v.size, price: v.price, inStock: available(p.id, v.size) > 0 })),
   }));
 }
@@ -88,4 +88,9 @@ export function search(q) {
   // Если есть совпадения в названии или категории, упоминания в описании не показываем.
   const strong = found.filter((x) => x.score >= t.length * 2);
   return (strong.length ? strong : found).sort((a, b) => b.score - a.score).map((x) => x.p);
+}
+
+// Цвета одной модели: худи в двух цветах это два товара с одинаковым group.
+export function siblings(p) {
+  return load().filter((x) => x.group && x.group === p.group);
 }

@@ -72,7 +72,11 @@
     const fab = $('[data-fab]');
     if (fab) fab.hidden = !c || Boolean($('[data-checkout]'));
     const on = new Set(favs.list());
-    $$('[data-fav]').forEach((b) => b.classList.toggle('is-on', on.has(b.dataset.fav)));
+    $$('[data-fav]').forEach((b) => {
+      b.classList.toggle('is-on', on.has(b.dataset.fav));
+      const l = b.querySelector('[data-fav-label]');
+      if (l) l.textContent = on.has(b.dataset.fav) ? 'В избранном' : 'В избранное';
+    });
   }
 
   // Выезжающие панели. Фильтры на десктопе всегда видны, поэтому у них свой класс вместо hidden.
@@ -239,16 +243,45 @@
   }
   $$('.rail-section').forEach(initRail);
 
-  // Карточка товара для лент, которые собираются в браузере
-  const heartSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7.5-4.6-9.3-9.2C1.4 7.3 3.6 4 7 4c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.4 0 5.6 3.3 4.3 6.8C19.5 15.4 12 20 12 20z"/></svg>';
-  const cardHtml = (p) => {
+  // Карточка для блоков, которые собираются в браузере: та же разметка, что на сервере.
+  const markSvg = '<svg class="mark" viewBox="-6 -6 225 157" aria-hidden="true"><use href="#wm-mark"/></svg>';
+  const plusSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+  const cardHtml = (p, all) => {
     const sizes = p.variants.filter((v) => v.inStock).map((v) => v.size);
-    return `<article class="card${sizes.length ? '' : ' is-soldout'}"><a class="card__link" href="/product/${esc(p.id)}">
-      <span class="card__img"><img src="${esc(p.images[0])}" alt="${esc(p.title)}" loading="lazy">${p.images[1] ? `<img class="card__alt" src="${esc(p.images[1])}" alt="" loading="lazy">` : ''}</span>
-      <span class="card__brand">Wasted Mondays</span><span class="card__title">${esc(model(p.title))}</span><span class="card__price">${money(p.price)}</span>
-      <span class="card__sizes">${sizes.length ? `Размеры: ${sizes.map(esc).join(', ')}` : 'Нет в наличии'}</span></a>
-      <button class="fav" type="button" aria-label="В избранное" data-fav="${esc(p.id)}">${heartSvg}</button></article>`;
+    const sibs = Object.values(all).filter((x) => x.group && x.group === p.group);
+    const n = sibs.length || 1;
+    return `<article class="card${sizes.length ? '' : ' is-soldout'}" data-id="${esc(p.id)}">
+      <div class="card__media"><a class="card__img" href="/product/${esc(p.id)}" tabindex="-1"><img src="${esc(p.images[0])}" alt="" loading="lazy">${p.images[1] ? `<img class="card__alt" src="${esc(p.images[1])}" alt="" loading="lazy">` : ''}</a>
+        <button class="fav card__fav" type="button" aria-label="В избранное" data-fav="${esc(p.id)}">${markSvg}</button>
+        ${sizes.length ? `<div class="quick" data-quick><button class="quick__plus" type="button" aria-label="Выбрать размер" aria-expanded="false" data-quick-toggle>${plusSvg}</button>
+          <div class="quick__sizes">${p.variants.map((v) => `<button type="button" data-quick-add="${esc(p.id)}" data-size="${esc(v.size)}"${v.inStock ? '' : ' disabled'}>${esc(v.size)}</button>`).join('')}</div></div>` : ''}
+      </div>
+      <a class="card__info" href="/product/${esc(p.id)}">
+        <span class="card__row"><span class="card__title">${esc(model(p.title))}</span><span class="card__price">${money(p.price)}</span></span>
+        <span class="card__color">${esc(p.color?.name || '')}</span>
+        <span class="card__swatches">${sibs.map((x) => `<i style="--c:${esc(x.color?.hex || '#ccc')}"${x.id === p.id ? ' class="is-current"' : ''}></i>`).join('')}<small>${n} ${plural(n, 'цвет', 'цвета', 'цветов')}</small></span>
+      </a></article>`;
   };
+
+  // Быстрое добавление: "+" на карточке. На компьютере размеры выезжают при наведении, на телефоне по нажатию.
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-quick-toggle]');
+    if (t) {
+      const q = t.closest('[data-quick]'), open = !q.classList.contains('is-open');
+      $$('[data-quick].is-open').forEach((x) => { x.classList.remove('is-open'); $('[data-quick-toggle]', x).setAttribute('aria-expanded', 'false'); });
+      q.classList.toggle('is-open', open); t.setAttribute('aria-expanded', String(open));
+      return;
+    }
+    const a = e.target.closest('[data-quick-add]');
+    if (a) {
+      e.preventDefault();
+      cart.add(a.dataset.quickAdd, a.dataset.size);
+      a.closest('[data-quick]')?.classList.remove('is-open');
+      showBag(true);
+      return;
+    }
+    if (!e.target.closest('[data-quick]')) $$('[data-quick].is-open').forEach((x) => x.classList.remove('is-open'));
+  });
 
   // Вы недавно смотрели
   const pdp = $('[data-product]');
@@ -260,7 +293,7 @@
     if (ids.length) products().then((byId) => {
       const list = ids.map((id) => byId[id]).filter(Boolean);
       if (!list.length) return;
-      $('[data-recent-list]', recent).innerHTML = list.map(cardHtml).join('');
+      $('[data-recent-list]', recent).innerHTML = list.slice(0, 4).map((p) => cardHtml(p, byId)).join('');
       recent.hidden = false; renderBadges();
     });
   }
@@ -342,24 +375,33 @@
   // Страница товара
   if (pdp) {
     const prod = JSON.parse(pdp.dataset.product);
-    const gallery = $('[data-gallery]'), dots = $$('.pdp__dots i');
-    gallery.addEventListener('scroll', () => {
-      const n = Math.round(gallery.scrollLeft / gallery.clientWidth);
-      dots.forEach((d, k) => d.classList.toggle('is-active', k === n));
-    }, { passive: true });
-    // На десктопе клик по фото открывает все фото крупно.
-    gallery.addEventListener('click', (e) => {
-      if (!e.target.matches('img') || matchMedia('(max-width: 900px)').matches) return;
+    const track = $('[data-gallery]'), slides = $$('.pdp__slide', track), gIdx = $('[data-gindex]');
+    const prevB = $('[data-gprev]'), nextB = $('[data-gnext]');
+    const cur = () => Math.round(track.scrollLeft / track.clientWidth);
+    const goTo = (n) => track.scrollTo({ left: track.clientWidth * Math.max(0, Math.min(slides.length - 1, n)), behavior: reduced ? 'auto' : 'smooth' });
+    const syncG = () => { const n = cur(); gIdx.textContent = n + 1; prevB.disabled = n === 0; nextB.disabled = n === slides.length - 1; };
+    track.addEventListener('scroll', syncG, { passive: true }); syncG();
+    prevB.addEventListener('click', () => goTo(cur() - 1));
+    nextB.addEventListener('click', () => goTo(cur() + 1));
+    document.addEventListener('keydown', (e) => {
+      if (e.target.matches('input, textarea, select') || $('.lightbox')) return;
+      if (e.key === 'ArrowRight') goTo(cur() + 1);
+      if (e.key === 'ArrowLeft') goTo(cur() - 1);
+    });
+    // Все фото крупно: кнопка в углу или клик по фото на компьютере.
+    const openZoom = (from) => {
       const box = document.createElement('div');
       box.className = 'lightbox';
       box.innerHTML = `<button class="icon-btn" type="button" aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></svg></button>`
-        + $$('img', gallery).map((im) => `<img src="${im.src}" alt="${esc(im.alt)}">`).join('');
+        + $$('img', track).map((im) => `<img src="${im.src}" alt="${esc(im.alt)}">`).join('');
       document.body.appendChild(box); document.body.style.overflow = 'hidden';
-      $$('img', box)[$$('img', gallery).indexOf(e.target)]?.scrollIntoView();
+      $$('img', box)[from]?.scrollIntoView();
       const close = () => { box.remove(); document.body.style.overflow = ''; document.removeEventListener('keydown', onKey); };
       const onKey = (k) => { if (k.key === 'Escape') close(); };
       box.addEventListener('click', close); document.addEventListener('keydown', onKey);
-    });
+    };
+    $('[data-gzoom]').addEventListener('click', () => openZoom(cur()));
+    track.addEventListener('click', (e) => { if (e.target.matches('img') && !matchMedia('(max-width: 900px)').matches) openZoom(cur()); });
     const sizes = $('.sizes', pdp), hint = $('[data-size-hint]', pdp);
     const picked = () => $('input[name=size]:checked', pdp)?.value;
     // Если в наличии один размер, выбираем его сразу.

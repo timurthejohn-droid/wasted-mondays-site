@@ -42,7 +42,12 @@
         }
       ],
       "tildaUid": 790861816822,
-      "moyskladId": null
+      "moyskladId": null,
+      "group": "dance-class-tee",
+      "color": {
+        "name": "Молочный",
+        "hex": "#ece6d8"
+      }
     },
     {
       "id": "wasted-applique-hoodie",
@@ -84,7 +89,12 @@
         }
       ],
       "tildaUid": 896537896682,
-      "moyskladId": null
+      "moyskladId": null,
+      "group": "applique-hoodie",
+      "color": {
+        "name": "Тёмно-серый",
+        "hex": "#3c3d40"
+      }
     },
     {
       "id": "wasted-t-shirt-membership-only",
@@ -127,7 +137,12 @@
         }
       ],
       "tildaUid": 842162974282,
-      "moyskladId": null
+      "moyskladId": null,
+      "group": "membership-tee",
+      "color": {
+        "name": "Молочный",
+        "hex": "#ece6d8"
+      }
     },
     {
       "id": "wasted-pants",
@@ -170,7 +185,12 @@
         }
       ],
       "tildaUid": 635219239932,
-      "moyskladId": null
+      "moyskladId": null,
+      "group": "wasted-pants",
+      "color": {
+        "name": "Тёмно-серый",
+        "hex": "#3c3d40"
+      }
     }
   ]
 }
