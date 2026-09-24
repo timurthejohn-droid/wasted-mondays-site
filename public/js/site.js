@@ -1,11 +1,15 @@
-// Wasted Mondays: корзина, избранное, выезжающие панели, фильтры каталога, галерея, оформление.
+// Wasted Mondays: слайдер, ленты, поиск, корзина, избранное, кабинет, оформление заказа.
 (() => {
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const money = (n) => `${Math.round(n).toLocaleString('ru-RU').replace(/ /g, ' ')} ₽`;
-  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const model = (t) => String(t).replace(/^Wasted\s+/i, '');
   const plural = (n, a, b, c) => { const m = n % 10, h = n % 100; return m === 1 && h !== 11 ? a : m >= 2 && m <= 4 && (h < 12 || h > 14) ? b : c; };
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const loggedIn = document.body.dataset.user === '1';
+  const post = (url, data) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+    .then(async (r) => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || 'Что-то пошло не так'); return d; });
 
   // localStorage может быть недоступен (приватный режим), тогда работаем без сохранения.
   const store = {
@@ -20,7 +24,7 @@
     clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2800);
   }
 
-  // Каталог для корзины подгружаем один раз и только когда нужен.
+  // Каталог подгружаем один раз и только когда нужен.
   let productsPromise;
   const products = () => (productsPromise ??= fetch('/api/products').then((r) => r.json())
     .then((list) => Object.fromEntries(list.map((p) => [p.id, p]))));
@@ -34,28 +38,41 @@
       const line = items.find((l) => l.productId === productId && l.size === size);
       if (line) line.qty = Math.min(5, line.qty + 1); else items.push({ productId, size, qty: 1 });
       cart.save(items);
+      const fab = $('[data-fab]');
+      if (fab) { fab.classList.remove('is-bump'); void fab.offsetWidth; fab.classList.add('is-bump'); }
     },
     count: () => cart.items().reduce((s, l) => s + l.qty, 0),
   };
+
+  // Избранное хранится в браузере, а у вошедших ещё и в аккаунте.
   const favs = {
     list: () => store.get('wm_fav', []),
+    set(l) { store.set('wm_fav', l); renderBadges(); },
     toggle(id) {
       const l = favs.list(); const i = l.indexOf(id);
       if (i >= 0) l.splice(i, 1); else l.push(id);
-      store.set('wm_fav', l); renderBadges(); return i < 0;
+      favs.set(l);
+      if (loggedIn) post('/api/account/favs', { favs: l }).catch(() => {});
+      return i < 0;
     },
   };
+  if (loggedIn) {
+    fetch('/api/account').then((r) => r.json()).then(({ user }) => {
+      if (!user) return;
+      const local = favs.list(), merged = [...new Set([...(user.favs || []), ...local])];
+      favs.set(merged);
+      if (merged.length !== (user.favs || []).length) post('/api/account/favs', { favs: merged }).catch(() => {});
+    }).catch(() => {});
+  }
 
   function renderBadges() {
     const c = cart.count(), f = favs.list().length;
-    $$('[data-cart-count]').forEach((b) => { b.textContent = c; b.hidden = !c; });
+    $$('[data-cart-count]').forEach((b) => { b.textContent = c; if (b.classList.contains('badge')) b.hidden = !c; });
     $$('[data-fav-count]').forEach((b) => { b.textContent = f; b.hidden = !f; });
+    const fab = $('[data-fab]');
+    if (fab) fab.hidden = !c || Boolean($('[data-checkout]'));
     const on = new Set(favs.list());
-    $$('[data-fav]').forEach((b) => {
-      b.classList.toggle('is-on', on.has(b.dataset.fav));
-      const label = b.querySelector('span');
-      if (label) label.textContent = on.has(b.dataset.fav) ? 'В избранном' : 'В избранное';
-    });
+    $$('[data-fav]').forEach((b) => b.classList.toggle('is-on', on.has(b.dataset.fav)));
   }
 
   // Выезжающие панели. Фильтры на десктопе всегда видны, поэтому у них свой класс вместо hidden.
@@ -64,17 +81,18 @@
     const d = $(`[data-drawer="${name}"]`);
     if (!d) return;
     lastFocus = document.activeElement;
+    closeSearch();
     if (d.classList.contains('drawer--filters')) d.classList.add('is-shown'); else d.hidden = false;
     requestAnimationFrame(() => requestAnimationFrame(() => d.classList.add('is-open')));
     document.body.style.overflow = 'hidden';
-    setTimeout(() => $('[data-drawer-close]', d)?.focus(), 50);
+    setTimeout(() => $('[data-drawer-close]', d)?.focus({ preventScroll: true }), 60);
   }
   function closeDrawer(d) {
     if (!d || !d.classList.contains('is-open')) return;
     d.classList.remove('is-open');
     document.body.style.overflow = '';
-    setTimeout(() => { if (d.classList.contains('drawer--filters')) d.classList.remove('is-shown'); else d.hidden = true; }, 350);
-    lastFocus?.focus?.();
+    setTimeout(() => { if (d.classList.contains('drawer--filters')) d.classList.remove('is-shown'); else d.hidden = true; }, 400);
+    lastFocus?.focus?.({ preventScroll: true });
   }
   document.addEventListener('click', (e) => {
     const open = e.target.closest('[data-drawer-open]');
@@ -83,40 +101,179 @@
     if (close) { closeDrawer(close.closest('.drawer')); return; }
     if (e.target.classList.contains('drawer')) closeDrawer(e.target);
   });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $$('.drawer.is-open').forEach(closeDrawer); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { $$('.drawer.is-open').forEach(closeDrawer); closeSearch(); } });
 
-  // Тень под шапкой при прокрутке
-  const hdr = $('.hdr');
-  const onScroll = () => hdr.classList.toggle('is-stuck', scrollY > 8);
+  // Шапка: на главной прозрачная поверх баннера, белеет после него.
+  const hdr = $('[data-hdr]');
+  const hero = $('[data-hero]');
+  const onScroll = () => {
+    const solid = !hero || scrollY > hero.offsetHeight - hdr.offsetHeight - 40 || !$('[data-search]').hidden;
+    hdr.classList.toggle('is-solid', solid);
+  };
   addEventListener('scroll', onScroll, { passive: true }); onScroll();
-
-  // Подсветка текущего раздела в меню
   const here = location.pathname + location.search;
   $$('.hdr__nav a').forEach((a) => { if (a.getAttribute('href') === here) a.setAttribute('aria-current', 'page'); });
+
+  // Серая полоса: на телефоне фразы сменяют друг друга.
+  const perks = $$('[data-perks] a');
+  if (perks.length > 1 && !reduced) {
+    let pi = 0;
+    setInterval(() => { perks[pi].classList.remove('is-active'); pi = (pi + 1) % perks.length; perks[pi].classList.add('is-active'); }, 4000);
+  }
+
+  // Поиск
+  const search = $('[data-search]'), sInput = $('[data-search-input]'), sResults = $('[data-search-results]'), scrim = $('.search-scrim');
+  let sTimer, sActive = -1;
+  function openSearch() {
+    search.hidden = false; scrim.hidden = false; onScroll();
+    sInput.focus(); renderSearch(sInput.value);
+  }
+  function closeSearch() {
+    if (!search || search.hidden) return;
+    search.hidden = true; scrim.hidden = true; onScroll();
+  }
+  async function renderSearch(q) {
+    q = q.trim(); sActive = -1;
+    if (q.length < 2) {
+      const cats = [...new Set(Object.values(await products()).flatMap((p) => p.category))];
+      sResults.innerHTML = `<p class="search__hint">Популярное</p><div class="search__pills">${cats.map((c) => `<a class="pill" href="/catalog?cat=${encodeURIComponent(c)}">${esc(c)}</a>`).join('')}</div>`;
+      return;
+    }
+    const list = await fetch(`/api/search?q=${encodeURIComponent(q)}`).then((r) => r.json()).catch(() => []);
+    if (sInput.value.trim() !== q) return; // пришёл устаревший ответ
+    sResults.innerHTML = list.length
+      ? `<p class="search__hint">Товары</p><div class="search__list">${list.map((p) => `<a class="search__item" href="/product/${esc(p.id)}">
+          <img src="${esc(p.image)}" alt=""><span><b>${esc(model(p.title))}</b><small>${esc(p.category.join(', '))}</small></span><span>${money(p.price)}</span></a>`).join('')}</div>
+         <a class="search__all" href="/search?q=${encodeURIComponent(q)}">Все результаты →</a>`
+      : `<p class="search__hint">Ничего не нашлось</p><p>Попробуйте «худи», «футболка» или «штаны».</p>`;
+  }
+  $$('[data-search-open]').forEach((b) => b.addEventListener('click', () => (search.hidden ? openSearch() : closeSearch())));
+  $$('[data-search-close]').forEach((b) => b.addEventListener('click', closeSearch));
+  sInput?.addEventListener('input', () => { clearTimeout(sTimer); sTimer = setTimeout(() => renderSearch(sInput.value), 150); });
+  sInput?.addEventListener('keydown', (e) => {
+    const items = $$('.search__item', sResults);
+    if (!items.length || !['ArrowDown', 'ArrowUp', 'Enter'].includes(e.key)) return;
+    if (e.key === 'Enter') { if (sActive >= 0) { e.preventDefault(); location.href = items[sActive].href; } return; }
+    e.preventDefault();
+    sActive = (sActive + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+    items.forEach((it, i) => it.classList.toggle('is-active', i === sActive));
+  });
 
   // Избранное
   document.addEventListener('click', (e) => {
     const b = e.target.closest('[data-fav]');
     if (!b) return;
     e.preventDefault();
-    toast(favs.toggle(b.dataset.fav) ? 'Добавлено в избранное' : 'Убрано из избранного');
+    const on = favs.toggle(b.dataset.fav);
+    toast(on ? `Добавлено в избранное. <a href="/catalog?fav=1">Смотреть</a>` : 'Убрано из избранного');
     if ($('[data-catalog]')) applyFilters();
   });
 
-  // Cookie
+  // Cookie: панель выезжает слева через секунду после загрузки.
   const cookie = $('[data-cookie]');
-  if (cookie && !store.get('wm_cookie_ok', false)) cookie.hidden = false;
-  $('[data-cookie-ok]')?.addEventListener('click', () => { store.set('wm_cookie_ok', true); cookie.hidden = true; });
+  if (cookie && !store.get('wm_cookie', null)) {
+    cookie.hidden = false;
+    setTimeout(() => cookie.classList.add('is-in'), 900);
+  }
+  $$('[data-cookie-ok]').forEach((b) => b.addEventListener('click', () => {
+    store.set('wm_cookie', { choice: b.dataset.cookieOk, at: Date.now() });
+    cookie.classList.remove('is-in');
+    setTimeout(() => { cookie.hidden = true; }, 600);
+  }));
+
+  // Баннер на весь экран
+  if (hero) {
+    const slides = $$('[data-slide]', hero), bars = $$('.hero__bar', hero), idx = $('[data-hero-index]', hero);
+    const MS = 6000;
+    hero.style.setProperty('--slide-ms', `${MS}ms`);
+    let i = 0, timer = null, paused = false, started = Date.now(), left = MS;
+    const go = (n) => {
+      slides[i].classList.remove('is-active');
+      i = (n + slides.length) % slides.length;
+      slides[i].classList.add('is-active');
+      bars.forEach((b, k) => { b.classList.toggle('is-done', k < i); b.classList.remove('is-active'); });
+      void bars[i].offsetWidth; bars[i].classList.add('is-active');
+      idx.textContent = String(i + 1).padStart(2, '0');
+      const nextImg = slides[(i + 1) % slides.length].querySelector('img');
+      if (nextImg?.loading === 'lazy') nextImg.loading = 'eager';
+      schedule(MS);
+    };
+    function schedule(ms) {
+      clearTimeout(timer); left = ms; started = Date.now();
+      if (!paused && !reduced) timer = setTimeout(() => go(i + 1), ms);
+    }
+    function pause(on) {
+      if (on === paused) return;
+      paused = on; hero.classList.toggle('is-paused', on);
+      if (on) { clearTimeout(timer); left = Math.max(300, left - (Date.now() - started)); } else schedule(left);
+    }
+    $('[data-hero-next]', hero).addEventListener('click', () => go(i + 1));
+    $('[data-hero-prev]', hero).addEventListener('click', () => go(i - 1));
+    bars.forEach((b) => b.addEventListener('click', () => go(+b.dataset.go)));
+    hero.addEventListener('mouseenter', () => pause(true));
+    hero.addEventListener('mouseleave', () => pause(false));
+    document.addEventListener('visibilitychange', () => pause(document.hidden));
+    let x0 = null, y0 = null;
+    hero.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+    hero.addEventListener('touchend', (e) => {
+      if (x0 === null) return;
+      const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; x0 = null;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) go(i + (dx < 0 ? 1 : -1));
+    });
+    if (reduced) hero.classList.add('is-paused');
+    go(0);
+  }
+
+  // Ленты со стрелками
+  function initRail(section) {
+    const rail = $('[data-rail]', section) || $('[data-recent-list]', section);
+    const prev = $('[data-rail-prev]', section), next = $('[data-rail-next]', section);
+    if (!rail || !prev) return;
+    const sync = () => {
+      prev.disabled = rail.scrollLeft < 4;
+      next.disabled = rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 4;
+    };
+    prev.addEventListener('click', () => rail.scrollBy({ left: -rail.clientWidth * 0.9, behavior: 'smooth' }));
+    next.addEventListener('click', () => rail.scrollBy({ left: rail.clientWidth * 0.9, behavior: 'smooth' }));
+    rail.addEventListener('scroll', sync, { passive: true }); addEventListener('resize', sync); sync();
+  }
+  $$('.rail-section').forEach(initRail);
+
+  // Карточка товара для лент, которые собираются в браузере
+  const heartSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7.5-4.6-9.3-9.2C1.4 7.3 3.6 4 7 4c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.4 0 5.6 3.3 4.3 6.8C19.5 15.4 12 20 12 20z"/></svg>';
+  const cardHtml = (p) => {
+    const sizes = p.variants.filter((v) => v.inStock).map((v) => v.size);
+    return `<article class="card${sizes.length ? '' : ' is-soldout'}"><a class="card__link" href="/product/${esc(p.id)}">
+      <span class="card__img"><img src="${esc(p.images[0])}" alt="${esc(p.title)}" loading="lazy">${p.images[1] ? `<img class="card__alt" src="${esc(p.images[1])}" alt="" loading="lazy">` : ''}</span>
+      <span class="card__brand">Wasted Mondays</span><span class="card__title">${esc(model(p.title))}</span><span class="card__price">${money(p.price)}</span>
+      <span class="card__sizes">${sizes.length ? `Размеры: ${sizes.map(esc).join(', ')}` : 'Нет в наличии'}</span></a>
+      <button class="fav" type="button" aria-label="В избранное" data-fav="${esc(p.id)}">${heartSvg}</button></article>`;
+  };
+
+  // Вы недавно смотрели
+  const pdp = $('[data-product]');
+  const currentId = pdp ? JSON.parse(pdp.dataset.product).id : null;
+  if (currentId) store.set('wm_recent', [currentId, ...store.get('wm_recent', []).filter((x) => x !== currentId)].slice(0, 12));
+  const recent = $('[data-recent]');
+  if (recent) {
+    const ids = store.get('wm_recent', []).filter((x) => x !== currentId);
+    if (ids.length) products().then((byId) => {
+      const list = ids.map((id) => byId[id]).filter(Boolean);
+      if (!list.length) return;
+      $('[data-recent-list]', recent).innerHTML = list.map(cardHtml).join('');
+      recent.hidden = false; renderBadges();
+    });
+  }
 
   // Мини-корзина справа
   async function showBag(added) {
-    const body = $('[data-bag-body]'), foot = $('[data-bag-foot]');
+    const body = $('[data-bag-body]'), foot = $('[data-bag-foot]'), recs = $('[data-bag-recs]');
     $('[data-bag-title]').textContent = added ? 'Добавлено в корзину' : 'Корзина';
     body.innerHTML = '<p class="empty">Загрузка…</p>';
     openDrawer('bag');
     const byId = await products();
     const items = cart.items().filter((l) => byId[l.productId]);
-    if (!items.length) { body.innerHTML = '<p class="empty">Корзина пуста.</p>'; foot.hidden = true; return; }
+    if (!items.length) { body.innerHTML = '<p class="empty">Корзина пуста.</p>'; foot.hidden = true; recs.hidden = true; return; }
     let total = 0;
     body.innerHTML = items.map((l) => {
       const p = byId[l.productId], v = p.variants.find((x) => x.size === l.size) || { price: p.price };
@@ -127,6 +284,14 @@
     }).join('');
     $('[data-bag-total]').textContent = money(total);
     foot.hidden = false;
+    const inCart = new Set(items.map((l) => l.productId));
+    const others = Object.values(byId).filter((p) => !inCart.has(p.id) && p.variants.some((v) => v.inStock)).slice(0, 3);
+    recs.hidden = !others.length;
+    $('[data-bag-recs-list]').innerHTML = others.map((p) => `<a href="/product/${esc(p.id)}"><img src="${esc(p.images[0])}" alt="">${esc(model(p.title))}<br><b>${money(p.price)}</b></a>`).join('');
+  }
+  if (!$('[data-checkout]')) {
+    $('[data-bag-link]')?.addEventListener('click', (e) => { e.preventDefault(); showBag(false); });
+    $('[data-fab]')?.addEventListener('click', (e) => { e.preventDefault(); showBag(false); });
   }
 
   // Каталог: фильтры и сортировка
@@ -149,6 +314,7 @@
     $('[data-plp-count]').textContent = `${shown} ${plural(shown, 'товар', 'товара', 'товаров')}`;
     $('[data-plp-title]').textContent = onlyFav ? 'Избранное' : cats.length === 1 ? cats[0] : 'Каталог';
     $('[data-empty]').hidden = shown > 0;
+    $$('[data-pill]').forEach((p) => p.classList.toggle('is-active', cats.length <= 1 && p.dataset.pill === (cats[0] || '') && !onlyFav));
     const params = new URLSearchParams();
     cats.forEach((c) => params.append('cat', c));
     if (onlyFav) params.set('fav', '1');
@@ -164,42 +330,113 @@
     if (qs.get('fav')) $('input[name=fav]').checked = true;
     $('.filters').addEventListener('change', applyFilters);
     $$('[data-filters-reset]').forEach((b) => b.addEventListener('click', () => { $$('.filters input').forEach((i) => { i.checked = false; }); applyFilters(); }));
+    $$('[data-pill]').forEach((p) => p.addEventListener('click', (e) => {
+      e.preventDefault();
+      $$('.filters input').forEach((i) => { i.checked = i.name === 'cat' && i.value === p.dataset.pill; });
+      applyFilters();
+    }));
     $('[data-sort]').addEventListener('change', (e) => applySort(e.target.value));
     applyFilters();
   }
 
-  // Карточка товара
-  const pdp = $('[data-product]');
+  // Страница товара
   if (pdp) {
     const prod = JSON.parse(pdp.dataset.product);
-    const gallery = $('[data-gallery]'), idx = $('[data-gallery-index]');
-    gallery.addEventListener('scroll', () => { idx.textContent = Math.round(gallery.scrollLeft / gallery.clientWidth) + 1; }, { passive: true });
-    // На десктопе клик по фото открывает все фото крупно, как на Farfetch.
+    const gallery = $('[data-gallery]'), dots = $$('.pdp__dots i');
+    gallery.addEventListener('scroll', () => {
+      const n = Math.round(gallery.scrollLeft / gallery.clientWidth);
+      dots.forEach((d, k) => d.classList.toggle('is-active', k === n));
+    }, { passive: true });
+    // На десктопе клик по фото открывает все фото крупно.
     gallery.addEventListener('click', (e) => {
       if (!e.target.matches('img') || matchMedia('(max-width: 900px)').matches) return;
       const box = document.createElement('div');
       box.className = 'lightbox';
       box.innerHTML = `<button class="icon-btn" type="button" aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></svg></button>`
-        + $$('img', gallery).map((i) => `<img src="${i.src}" alt="${esc(i.alt)}">`).join('');
+        + $$('img', gallery).map((im) => `<img src="${im.src}" alt="${esc(im.alt)}">`).join('');
       document.body.appendChild(box); document.body.style.overflow = 'hidden';
-      const imgs = $$('img', box); imgs[$$('img', gallery).indexOf(e.target)]?.scrollIntoView();
+      $$('img', box)[$$('img', gallery).indexOf(e.target)]?.scrollIntoView();
       const close = () => { box.remove(); document.body.style.overflow = ''; document.removeEventListener('keydown', onKey); };
       const onKey = (k) => { if (k.key === 'Escape') close(); };
       box.addEventListener('click', close); document.addEventListener('keydown', onKey);
     });
-    const select = $('[data-size]', pdp), hint = $('[data-size-hint]', pdp);
-    select?.addEventListener('change', () => { select.classList.remove('is-invalid'); hint.hidden = true; });
-    $('[data-add]', pdp)?.addEventListener('click', () => {
-      if (!select.value) { select.classList.add('is-invalid'); hint.hidden = false; select.focus(); return; }
-      cart.add(prod.id, select.value);
+    const sizes = $('.sizes', pdp), hint = $('[data-size-hint]', pdp);
+    const picked = () => $('input[name=size]:checked', pdp)?.value;
+    // Если в наличии один размер, выбираем его сразу.
+    const avail = $$('input[name=size]:not(:disabled)', pdp);
+    if (avail.length === 1) avail[0].checked = true;
+    sizes.addEventListener('change', () => { sizes.classList.remove('is-invalid'); hint.hidden = true; });
+    const add = () => {
+      const size = picked();
+      if (!size) {
+        sizes.classList.add('is-invalid'); hint.hidden = false;
+        sizes.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
+        return;
+      }
+      cart.add(prod.id, size);
       showBag(true);
+    };
+    $('[data-add]', pdp)?.addEventListener('click', add);
+    $('[data-buybar-add]')?.addEventListener('click', add);
+    // Нижняя панель "В корзину" появляется, когда основная кнопка ушла из виду.
+    const buybar = $('[data-buybar]'), mainBtn = $('[data-add]', pdp);
+    if (buybar && mainBtn && 'IntersectionObserver' in window) {
+      buybar.hidden = false;
+      new IntersectionObserver(([e]) => buybar.classList.toggle('is-shown', !e.isIntersecting && e.boundingClientRect.top < 0))
+        .observe(mainBtn);
+    }
+  }
+
+  // Вход и регистрация
+  const authForm = $('[data-auth-form]');
+  if (authForm) {
+    const err = $('[data-auth-error]', authForm);
+    const step = (n) => $$('[data-step]', authForm).forEach((s) => { s.hidden = s.dataset.step !== String(n); });
+    const target = () => (authForm.dataset.channel === 'email' ? $('#a-email').value : $('#a-phone').value);
+    const showErr = (m) => { err.textContent = m; err.hidden = !m; };
+    $$('[data-auth-tab]').forEach((t) => t.addEventListener('click', () => {
+      authForm.dataset.channel = t.dataset.authTab;
+      $$('[data-auth-tab]').forEach((x) => { x.classList.toggle('is-active', x === t); x.setAttribute('aria-selected', x === t); });
+      $$('[data-for]', authForm).forEach((f) => { f.hidden = f.dataset.for !== t.dataset.authTab; });
+      step(1); showErr('');
+    }));
+    $('[data-auth-back]', authForm).addEventListener('click', () => { step(1); showErr(''); });
+    authForm.addEventListener('submit', async (e) => {
+      e.preventDefault(); showErr('');
+      const onStep1 = !$('[data-step="1"]', authForm).hidden;
+      const btn = $(`[data-step="${onStep1 ? 1 : 2}"] button[type=submit]`, authForm);
+      btn.disabled = true;
+      try {
+        if (onStep1) {
+          if (!authForm.elements.consent.checked) throw new Error('Нужно согласие на обработку персональных данных');
+          const r = await post('/api/auth/code', { channel: authForm.dataset.channel, to: target(), consent: true });
+          $('[data-sent]', authForm).textContent = `Код отправлен на ${r.to}`;
+          const test = $('[data-test-code]', authForm);
+          test.hidden = !r.testCode;
+          if (r.testCode) test.textContent = `Тестовый режим: отправка ещё не подключена, ваш код ${r.testCode}`;
+          step(2); $('#a-code').value = ''; $('#a-code').focus();
+        } else {
+          const r = await post('/api/auth/verify', { channel: authForm.dataset.channel, to: target(), code: $('#a-code').value, next: authForm.dataset.next, favs: favs.list() });
+          location.href = r.next || '/account';
+          return;
+        }
+      } catch (ex) { showErr(ex.message); }
+      btn.disabled = false;
     });
   }
 
-  // Иконка корзины открывает мини-корзину (кроме самой страницы корзины)
-  if (!$('[data-checkout]')) {
-    $('[data-bag-link]')?.addEventListener('click', (e) => { e.preventDefault(); showBag(false); });
-  }
+  // Личный кабинет
+  $('[data-logout]')?.addEventListener('click', () => post('/api/auth/logout', {}).finally(() => { location.href = '/'; }));
+  const profile = $('[data-profile-form]');
+  profile?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = $('[data-profile-msg]'), f = new FormData(profile);
+    try {
+      await post('/api/account/profile', { name: f.get('name'), email: f.get('email'), phone: f.get('phone'), address: f.get('address') });
+      msg.style.color = 'inherit'; msg.textContent = 'Сохранено';
+    } catch (ex) { msg.style.color = ''; msg.textContent = ex.message; }
+    msg.hidden = false;
+  });
 
   // Корзина и оформление
   const checkout = $('[data-checkout]');
@@ -215,7 +452,7 @@
       const items = cart.items().filter((l) => byId[l.productId]?.variants.some((v) => v.size === l.size));
       cart.save(items);
       if (!items.length) {
-        box.innerHTML = '<p class="empty">В корзине пока ничего нет. <a href="/catalog">Перейти в каталог</a></p>';
+        box.innerHTML = '<div class="empty-state"><p>В корзине пока ничего нет.</p><a class="btn" href="/catalog">Перейти в каталог</a></div>';
         form.hidden = true; summary.hidden = true; return;
       }
       form.hidden = false; summary.hidden = false;
@@ -279,17 +516,12 @@
       const btn = $('button[type=submit]', summary);
       btn.disabled = true; btn.textContent = 'Отправляем…';
       try {
-        const r = await fetch('/api/orders', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            items: cart.items(),
-            customer: { name: f.get('name'), email: f.get('email'), phone: f.get('phone'), comment: f.get('comment'), newsletter: !!f.get('newsletter') },
-            delivery: { method: f.get('delivery'), address: f.get('address') || '' },
-            consent: true,
-          }),
+        const res = await post('/api/orders', {
+          items: cart.items(),
+          customer: { name: f.get('name'), email: f.get('email'), phone: f.get('phone'), comment: f.get('comment'), newsletter: !!f.get('newsletter') },
+          delivery: { method: f.get('delivery'), address: f.get('address') || '' },
+          consent: true,
         });
-        const res = await r.json();
-        if (!r.ok) throw new Error(res.error || 'Не получилось оформить заказ');
         location.href = `/order/${res.id}`;
       } catch (ex) {
         err.textContent = ex.message; err.hidden = false;

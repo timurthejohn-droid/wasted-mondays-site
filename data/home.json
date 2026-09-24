@@ -1,0 +1,104 @@
+{
+  "hero": [
+    {
+      "img": "/img/look/08686.jpg",
+      "mobile": "/img/look/08686-m.jpg",
+      "focus": "50% 30%",
+      "product": "wasted-t-shirt-membership-only"
+    },
+    {
+      "img": "/img/look/08599.jpg",
+      "mobile": "/img/look/08599-m.jpg",
+      "focus": "52% 30%",
+      "eyebrow": "Съёмка, июль 2026",
+      "title": "Wasted Mondays",
+      "cta": "Смотреть каталог",
+      "href": "/catalog"
+    },
+    {
+      "img": "/img/site/__7741_copy.jpg",
+      "mobile": "/img/products/wasted-applique-hoodie/01.jpg",
+      "focus": "50% 18%",
+      "product": "wasted-applique-hoodie"
+    },
+    {
+      "img": "/img/look/08612.jpg",
+      "mobile": "/img/look/08612-m.jpg",
+      "focus": "55% 35%",
+      "eyebrow": "Съёмка, июль 2026",
+      "title": "Анонсы дропов в Телеграме",
+      "cta": "Подписаться",
+      "href": "https://t.me/wastedmondayyss"
+    },
+    {
+      "img": "/img/look/08690.jpg",
+      "mobile": "/img/look/08690-m.jpg",
+      "focus": "45% 30%",
+      "product": "wasted-t-shirt-membership-only"
+    },
+    {
+      "img": "/img/look/08650.jpg",
+      "mobile": "/img/look/08650-m.jpg",
+      "focus": "50% 60%",
+      "eyebrow": "Съёмка, июль 2026",
+      "title": "Wasted Mondays",
+      "cta": "Смотреть каталог",
+      "href": "/catalog"
+    },
+    {
+      "img": "/img/site/__6543_copy.jpg",
+      "mobile": "/img/products/wasted-pants/01.jpg",
+      "focus": "50% 20%",
+      "product": "wasted-pants"
+    },
+    {
+      "img": "/img/look/08633.jpg",
+      "mobile": "/img/look/08633-m.jpg",
+      "focus": "45% 35%",
+      "eyebrow": "Съёмка, июль 2026",
+      "title": "Wasted Mondays",
+      "cta": "Смотреть каталог",
+      "href": "/catalog"
+    }
+  ],
+  "banner": {
+    "img": "/img/look/08606.jpg",
+    "mobile": "/img/look/08606-m.jpg",
+    "focus": "60% 40%",
+    "left": "Лукбук",
+    "right": "Смотреть съёмку",
+    "href": "#lookbook"
+  },
+  "lookbook": [
+    "08591",
+    "08602",
+    "08628",
+    "08655",
+    "08684",
+    "08693",
+    "08661"
+  ],
+  "breakers": [
+    {
+      "img": "/img/products/wasted-t-shirt-dance-class/02.jpg",
+      "bg": "#f0efed",
+      "left": "Maybe next Monday",
+      "right": "Смотреть каталог",
+      "href": "/catalog"
+    },
+    {
+      "img": "/img/products/wasted-t-shirt-dance-class/10.jpg",
+      "bg": "#eeedea",
+      "left": "I love wasting money",
+      "right": "on my Wasted Mondays",
+      "href": "/catalog?cat=%D0%A4%D1%83%D1%82%D0%B1%D0%BE%D0%BB%D0%BA%D0%B8"
+    },
+    {
+      "img": "/img/products/wasted-applique-hoodie/06.jpg",
+      "bg": "#ebebe8",
+      "left": "Wasted Mondays",
+      "right": "Анонсы в Телеграме",
+      "href": "https://t.me/wastedmondayyss"
+    }
+  ]
+}

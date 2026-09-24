@@ -50,6 +50,17 @@ export function reservedQty(productId, size) {
 
 export const get = (id) => list.find((o) => o.id === id) || null;
 
+// Заказы в кабинете: оформленные из аккаунта и оформленные без входа на подтверждённые почту или телефон.
+export function forUser(user) {
+  const digits = (p) => String(p || '').replace(/\D/g, '').slice(-10);
+  return list.filter((o) => o.userId === user.id
+    || (user.email && o.customer.email === user.email)
+    || (user.phone && digits(o.customer.phone) === digits(user.phone)))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export const STATUS = { pending_payment: 'Ожидает оплаты', paid: 'Оплачен', shipped: 'Передан в доставку', done: 'Получен', cancelled: 'Отменён' };
+
 function newId() {
   const d = new Date();
   const ymd = `${String(d.getFullYear()).slice(2)}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
@@ -58,7 +69,7 @@ function newId() {
 
 const clean = (v, max = 200) => String(v ?? '').trim().slice(0, max);
 
-export function create(input) {
+export function create(input, user = null) {
   const c = input?.customer || {};
   const customer = {
     name: clean(c.name, 120), email: clean(c.email, 120).toLowerCase(),
@@ -102,7 +113,7 @@ export function create(input) {
 
   const total = items.reduce((s, l) => s + l.sum, 0) + dm.price;
   const order = {
-    id: newId(), createdAt: new Date().toISOString(), status: 'pending_payment',
+    id: newId(), createdAt: new Date().toISOString(), status: 'pending_payment', userId: user?.id || null,
     customer, delivery: { ...delivery, title: dm.title, price: dm.price },
     items, total, payment: null, moyskladId: null, yandexDeliveryId: null,
   };
