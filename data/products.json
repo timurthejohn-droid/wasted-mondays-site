@@ -1,0 +1,176 @@
+{
+  "source": "tilda-export-2026-09-24",
+  "products": [
+    {
+      "id": "wasted-t-shirt-dance-class",
+      "title": "Wasted T-Shirt Dance Class",
+      "price": 6000.0,
+      "category": [
+        "Футболки"
+      ],
+      "description": "Укороченная футболка свободного кроя с отсылкой к спортивному мерчендайзу 80-90ых. Силуэт вдохновлён архивными моделями, которые когда-то можно было найти в секонд-хендах.<br /><br />Свободная посадка создаёт расслабленный объём, а укороченная длина делает силуэт современным и более акцентным. Ткань стандартной плотности – комфортная для повседневной носки, держит форму и остаётся пластичной в движении.<br /><br />Баланс ностальгии и современной уличной эстетики делает модель универсальной базой.<br /><br />Детали:<br />• Укороченная длина<br />• Свободный винтажный крой<br />• Вышивка с логотипом на рукаве<br />• Средняя плотность ткани<br />• Отсылка к спортивной эстетике 80–90-х<br /><br />Подходит для многослойных образов и сочетаний с денимом, спортивными брюками или юбками.",
+      "images": [
+        "/img/products/wasted-t-shirt-dance-class/01.jpg",
+        "/img/products/wasted-t-shirt-dance-class/02.jpg",
+        "/img/products/wasted-t-shirt-dance-class/03.jpg",
+        "/img/products/wasted-t-shirt-dance-class/04.jpg",
+        "/img/products/wasted-t-shirt-dance-class/05.jpg",
+        "/img/products/wasted-t-shirt-dance-class/06.jpg",
+        "/img/products/wasted-t-shirt-dance-class/07.jpg",
+        "/img/products/wasted-t-shirt-dance-class/08.jpg",
+        "/img/products/wasted-t-shirt-dance-class/09.jpg",
+        "/img/products/wasted-t-shirt-dance-class/10.jpg"
+      ],
+      "variants": [
+        {
+          "size": "S",
+          "price": 6000.0,
+          "stock": 6,
+          "tildaUid": 762963419122
+        },
+        {
+          "size": "L",
+          "price": 6000.0,
+          "stock": 11,
+          "tildaUid": 376790985782
+        },
+        {
+          "size": "XL",
+          "price": 6000.0,
+          "stock": 9,
+          "tildaUid": 296955281742
+        }
+      ],
+      "tildaUid": 790861816822,
+      "moyskladId": null
+    },
+    {
+      "id": "wasted-applique-hoodie",
+      "title": "Wasted Appliqué Hoodie",
+      "price": 15000.0,
+      "category": [
+        "Худи"
+      ],
+      "description": "Худи из тяжёлого мягкого хлопка с бархатным эффектом. <br /><br />Винтажный свободный силуэт с широкими рукавами и глубоким капюшоном формирует образ, вдохновлённый спортивной эстетикой прошлого. Плотный хлопок держит форму, создаёт ощущение веса и качества, оставаясь мягким и комфортным к телу.<br /><br />Акцент — логотип-аппликация ручной работы, добавляющая индивидуальность и ощущение вещи вне массового производства.<br /><br />Детали:<br />• Тяжёлый хлопок с бархатным эффектом<br />• Свободная, немного укороченная посадка<br />• Винтажный унисекс-силуэт<br />• Логотип-аппликация ручной работы<br />• Вышивка на рукаве<br />• Широкие рукава<br />• Двусторонняя молния<br />• Глубокий капюшон<br />• Металлическая фурнитура<br /><br />Подходит для многослойных образов и сочетаний с денимом, спортивными брюками или юбками.",
+      "images": [
+        "/img/products/wasted-applique-hoodie/01.jpg",
+        "/img/products/wasted-applique-hoodie/02.jpg",
+        "/img/products/wasted-applique-hoodie/03.jpg",
+        "/img/products/wasted-applique-hoodie/04.jpg",
+        "/img/products/wasted-applique-hoodie/05.jpg",
+        "/img/products/wasted-applique-hoodie/06.jpg",
+        "/img/products/wasted-applique-hoodie/07.jpg",
+        "/img/products/wasted-applique-hoodie/08.jpg",
+        "/img/products/wasted-applique-hoodie/09.jpg"
+      ],
+      "variants": [
+        {
+          "size": "S",
+          "price": 15000.0,
+          "stock": 2,
+          "tildaUid": 630138075932
+        },
+        {
+          "size": "L",
+          "price": 15000.0,
+          "stock": 0,
+          "tildaUid": 104974915762
+        },
+        {
+          "size": "XL",
+          "price": 15000.0,
+          "stock": 2,
+          "tildaUid": 494232277022
+        }
+      ],
+      "tildaUid": 896537896682,
+      "moyskladId": null
+    },
+    {
+      "id": "wasted-t-shirt-membership-only",
+      "title": "Wasted T-Shirt Membership Only",
+      "price": 6000.0,
+      "category": [
+        "Футболки"
+      ],
+      "description": "Укороченная футболка свободного кроя с отсылкой к спортивному мерчендайзу 80-90ых. Силуэт вдохновлён архивными моделями, которые когда-то можно было найти в секонд-хендах.<br /><br />Свободная посадка создаёт расслабленный объём, а укороченная длина делает силуэт современным и более акцентным. Ткань стандартной плотности – комфортная для повседневной носки, держит форму и остаётся пластичной в движении.<br /><br />Баланс ностальгии и современной уличной эстетики делает модель универсальной базой.<br /><br />Детали:<br />• Укороченная длина<br />• Свободный винтажный крой<br />• Вышивка с логотипом на рукаве<br />• Средняя плотность ткани<br />• Отсылка к спортивной эстетике 80–90-х<br /><br />Подходит для многослойных образов и сочетаний с денимом, спортивными брюками или юбками.",
+      "images": [
+        "/img/products/wasted-t-shirt-membership-only/01.jpg",
+        "/img/products/wasted-t-shirt-membership-only/02.jpg",
+        "/img/products/wasted-t-shirt-membership-only/03.jpg",
+        "/img/products/wasted-t-shirt-membership-only/04.jpg",
+        "/img/products/wasted-t-shirt-membership-only/05.jpg",
+        "/img/products/wasted-t-shirt-membership-only/06.jpg",
+        "/img/products/wasted-t-shirt-membership-only/07.jpg",
+        "/img/products/wasted-t-shirt-membership-only/08.jpg",
+        "/img/products/wasted-t-shirt-membership-only/09.jpg",
+        "/img/products/wasted-t-shirt-membership-only/10.jpg"
+      ],
+      "variants": [
+        {
+          "size": "S",
+          "price": 6000.0,
+          "stock": 5,
+          "tildaUid": 813799044822
+        },
+        {
+          "size": "L",
+          "price": 6000.0,
+          "stock": 10,
+          "tildaUid": 347600116552
+        },
+        {
+          "size": "XL",
+          "price": 6000.0,
+          "stock": 9,
+          "tildaUid": 492372367952
+        }
+      ],
+      "tildaUid": 842162974282,
+      "moyskladId": null
+    },
+    {
+      "id": "wasted-pants",
+      "title": "Wasted Pants",
+      "price": 13000.0,
+      "category": [
+        "Штаны"
+      ],
+      "description": "Спортивные брюки из тяжёлого мягкого хлопка с бархатным эффектом.<br /><br />Широкие штанины и свободный спортивный крой формируют расслабленный винтажный силуэт. Плотный хлопок держит форму и создаёт ощущение веса и качества, оставаясь мягким и комфортным в носке.<br /><br />Детали:<br />• Тяжёлый хлопок с бархатным эффектом<br />• Свободный спортивный крой<br />• Резинки внизу штанин для регулировки объёма<br />• Вышивка с логотипом<br />• Металлическая фурнитура<br /><br />Подходят для повседневных и многослойных образов — сочетаются с худи, футболками, свободными рубашками или базовым трикотажем.",
+      "images": [
+        "/img/products/wasted-pants/01.jpg",
+        "/img/products/wasted-pants/02.jpg",
+        "/img/products/wasted-pants/03.jpg",
+        "/img/products/wasted-pants/04.jpg",
+        "/img/products/wasted-pants/05.jpg",
+        "/img/products/wasted-pants/06.jpg",
+        "/img/products/wasted-pants/07.jpg",
+        "/img/products/wasted-pants/08.jpg",
+        "/img/products/wasted-pants/09.jpg",
+        "/img/products/wasted-pants/10.jpg"
+      ],
+      "variants": [
+        {
+          "size": "S",
+          "price": 13000.0,
+          "stock": 1,
+          "tildaUid": 839983030912
+        },
+        {
+          "size": "L",
+          "price": 13000.0,
+          "stock": 0,
+          "tildaUid": 988210368002
+        },
+        {
+          "size": "XL",
+          "price": 13000.0,
+          "stock": 0,
+          "tildaUid": 506054559092
+        }
+      ],
+      "tildaUid": 635219239932,
+      "moyskladId": null
+    }
+  ]
+}
