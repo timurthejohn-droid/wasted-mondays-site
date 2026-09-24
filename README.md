@@ -63,3 +63,11 @@
 3. Яндекс Доставка: расчёт и выбор ПВЗ в корзине (нужен договор)
 4. Промокоды (на Тильде были)
 5. Хостинг и перенос домена
+
+## Демо-версия на GitHub Pages
+
+https://timurthejohn-droid.github.io/wasted-mondays-site/
+
+Статичная копия для команды, лежит в `docs/`. Заказы и вход в ней отключены.
+Обновить после правок: `node scripts/export.mjs /wasted-mondays-site`, затем commit и push.
+Закрыта от индексации: мета-теги robots, googlebot, yandex, bingbot на каждой странице и robots.txt.
