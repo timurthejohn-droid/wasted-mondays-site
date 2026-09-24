@@ -2,6 +2,133 @@
   "source": "tilda-export-2026-09-24",
   "products": [
     {
+      "id": "motorsport-hoodie",
+      "title": "Motorsport Hoodie",
+      "price": 15000,
+      "category": [
+        "Худи"
+      ],
+      "description": "<p>Худи с шелкографией из дропа 02 Motorsport.</p>",
+      "images": [
+        "/img/products/motorsport-hoodie/01.jpg",
+        "/img/products/motorsport-hoodie/02.jpg",
+        "/img/products/motorsport-hoodie/03.jpg",
+        "/img/products/motorsport-hoodie/04.jpg",
+        "/img/products/motorsport-hoodie/05.jpg",
+        "/img/products/motorsport-hoodie/06.jpg",
+        "/img/products/motorsport-hoodie/07.jpg",
+        "/img/products/motorsport-hoodie/08.jpg",
+        "/img/products/motorsport-hoodie/09.jpg",
+        "/img/products/motorsport-hoodie/10.jpg",
+        "/img/products/motorsport-hoodie/11.jpg",
+        "/img/products/motorsport-hoodie/12.jpg",
+        "/img/products/motorsport-hoodie/13.jpg",
+        "/img/products/motorsport-hoodie/14.jpg",
+        "/img/products/motorsport-hoodie/15.jpg",
+        "/img/products/motorsport-hoodie/16.jpg"
+      ],
+      "variants": [
+        {
+          "size": "S",
+          "price": 15000,
+          "stock": 10
+        },
+        {
+          "size": "M",
+          "price": 15000,
+          "stock": 10
+        },
+        {
+          "size": "L",
+          "price": 15000,
+          "stock": 10
+        },
+        {
+          "size": "XL",
+          "price": 15000,
+          "stock": 10
+        }
+      ],
+      "moyskladId": null,
+      "group": "motorsport-hoodie",
+      "color": null,
+      "collection": "motorsport"
+    },
+    {
+      "id": "motorsport-shorts",
+      "title": "Motorsport Shorts",
+      "price": 13000,
+      "category": [
+        "Шорты"
+      ],
+      "description": "<p>Шорты из дропа 02 Motorsport.</p>",
+      "images": [
+        "/img/products/motorsport-shorts/01.jpg",
+        "/img/products/motorsport-shorts/02.jpg",
+        "/img/products/motorsport-shorts/03.jpg",
+        "/img/products/motorsport-shorts/04.jpg",
+        "/img/products/motorsport-shorts/05.jpg",
+        "/img/products/motorsport-shorts/06.jpg",
+        "/img/products/motorsport-shorts/07.jpg"
+      ],
+      "variants": [
+        {
+          "size": "M",
+          "price": 13000,
+          "stock": 10
+        },
+        {
+          "size": "L",
+          "price": 13000,
+          "stock": 10
+        },
+        {
+          "size": "XL",
+          "price": 13000,
+          "stock": 10
+        }
+      ],
+      "moyskladId": null,
+      "group": "motorsport-shorts",
+      "color": null,
+      "collection": "motorsport"
+    },
+    {
+      "id": "top-69",
+      "title": "69 Top",
+      "price": 6000,
+      "category": [
+        "Майки"
+      ],
+      "description": "<p>Женская майка «69» из дропа 02 Motorsport. Первая женская вещь Wasted Mondays.</p>",
+      "images": [
+        "/img/products/top-69/01.jpg",
+        "/img/products/top-69/02.jpg",
+        "/img/products/top-69/03.jpg"
+      ],
+      "variants": [
+        {
+          "size": "XS",
+          "price": 6000,
+          "stock": 0
+        },
+        {
+          "size": "S",
+          "price": 6000,
+          "stock": 0
+        },
+        {
+          "size": "M",
+          "price": 6000,
+          "stock": 0
+        }
+      ],
+      "moyskladId": null,
+      "group": "top-69",
+      "color": null,
+      "collection": "motorsport"
+    },
+    {
       "id": "wasted-t-shirt-dance-class",
       "title": "Wasted T-Shirt Dance Class",
       "price": 6000.0,

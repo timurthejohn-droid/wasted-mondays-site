@@ -14,10 +14,11 @@
       "id": "motorsport",
       "title": "Motorsport",
       "drop": "Drop 02",
-      "status": "soon",
-      "cover": null,
+      "status": "live",
+      "cover": "/img/look/08599.jpg",
       "intro": "Второй дроп про моторспорт.",
-      "description": "Гоночная эстетика, пит-лейн, тачки и движуха. Худи с шелкографией, шорты и первая женская линия Wasted Mondays."
+      "description": "Гоночная эстетика, пит-лейн, тачки и движуха. Худи с шелкографией, шорты и женская майка «69», первая вещь женской линии Wasted Mondays.",
+      "focus": "50% 30%"
     }
   ]
 }

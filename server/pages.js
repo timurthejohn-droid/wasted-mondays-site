@@ -207,9 +207,9 @@ ${body}
 <div class="lead" data-lead hidden>
   <div class="lead__box" role="dialog" aria-modal="true" aria-labelledby="lead-title">
     <div class="lead__body">
-      ${leadForm('l', `<p class="eyebrow">Drop 02</p>
+      ${leadForm('l', `<p class="eyebrow">Следующий дроп</p>
         <h2 id="lead-title">Ранний доступ к дропу</h2>
-        <p class="lead__text">Дроп 01 разошёлся за 48 часов. Оставьте почту, и мы пришлём закрытую ссылку на дроп 02 раньше, чем он откроется для всех.</p>`,
+        <p class="lead__text">Дроп 01 разошёлся за 48 часов. Оставьте почту, и мы пришлём закрытую ссылку на следующий дроп раньше, чем он откроется для всех.</p>`,
         '<button class="btn btn--block btn--ghost" type="button" data-lead-close>Продолжить покупки</button>')}
     </div>
     <div class="lead__media"><img src="/img/products/wasted-applique-hoodie/01.jpg" alt="" loading="lazy"></div>
@@ -237,9 +237,9 @@ function leadForm(prefix, head, doneExtra = '') {
         <button class="btn btn--block btn--lg" type="submit">Получить доступ</button>
       </form>
       <div class="lead__done" data-lead-done hidden>
-        <p class="eyebrow">Drop 02</p>
+        <p class="eyebrow">Следующий дроп</p>
         <h2>Вы в списке</h2>
-        <p class="lead__text">Ссылку на дроп 02 пришлём на почту до открытия продаж. Анонсы и закулисье пока в <a href="${TG_CHANNEL}" target="_blank" rel="noopener">Телеграме</a>.</p>
+        <p class="lead__text">Ссылку на следующий дроп пришлём на почту до открытия продаж. Анонсы и закулисье пока в <a href="${TG_CHANNEL}" target="_blank" rel="noopener">Телеграме</a>.</p>
         ${doneExtra}
       </div>`;
 }
@@ -314,8 +314,8 @@ function card(p, order = 0) {
   </div>
   <a class="card__info" href="/product/${esc(p.id)}">
     <span class="card__row"><span class="card__title">${esc(model(p.title))}</span><span class="card__price">${money(p.price)}</span></span>
-    <span class="card__color">${esc(p.color?.name || '')}</span>
-    <span class="card__swatches">${sibs.map((x) => `<i style="--c:${esc(x.color?.hex || '#ccc')}"${x.id === p.id ? ' class="is-current"' : ''}></i>`).join('')}<small>${n} ${plural(n, 'цвет', 'цвета', 'цветов')}</small></span>
+    ${p.color ? `<span class="card__color">${esc(p.color.name)}</span>
+    <span class="card__swatches">${sibs.map((x) => `<i style="--c:${esc(x.color?.hex || '#ccc')}"${x.id === p.id ? ' class="is-current"' : ''}></i>`).join('')}<small>${n} ${plural(n, 'цвет', 'цвета', 'цветов')}</small></span>` : ''}
   </a>
 </article>`;
 }
@@ -452,7 +452,8 @@ ${breaker(br[2])}
 export function catalogPage(user) {
   const all = catalog.all();
   const cats = catalog.categories();
-  const sizes = [...new Set(all.flatMap((p) => p.variants.map((v) => v.size)))];
+  const SIZE_ORDER = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+  const sizes = [...new Set(all.flatMap((p) => p.variants.map((v) => v.size)))].sort((a, b) => SIZE_ORDER.indexOf(a) - SIZE_ORDER.indexOf(b));
   const cols = catalog.collections().filter((c) => all.some((p) => p.collection === c.id));
   const body = `
 <section class="plp">
@@ -554,7 +555,7 @@ export function product(p, user) {
       </div>
 
       <div class="pdp__line">
-        <p><b>Цвет</b><sup>${sibs.length}</sup> <span class="muted">${esc(p.color?.name || '')}</span></p>
+        ${p.color ? `<p><b>Цвет</b><sup>${sibs.length}</sup> <span class="muted">${esc(p.color.name)}</span></p>` : '<p></p>'}
         <button class="fav-link" type="button" data-fav="${esc(p.id)}"><span data-fav-label>В избранное</span>${icon.mark}</button>
       </div>
       <div class="pdp__colors">
@@ -602,7 +603,7 @@ export function product(p, user) {
       <div class="sheet__body rich" data-sheet-body="desc">
         <p class="sheet__title">${esc(model(p.title))}</p>
         ${p.description}
-        <p class="sheet__meta">Цвет: ${esc(p.color?.name || '')}<br>Размеры: ${variants.map((v) => esc(v.size)).join(', ')}</p>
+        <p class="sheet__meta">${p.color ? `Цвет: ${esc(p.color.name)}<br>` : ''}Размеры: ${variants.map((v) => esc(v.size)).join(', ')}</p>
       </div>
       <div class="sheet__body rich" data-sheet-body="ship" hidden>
         <p class="sheet__title">Доставка</p>

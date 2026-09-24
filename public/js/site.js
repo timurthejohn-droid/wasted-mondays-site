@@ -403,8 +403,8 @@
       </div>
       <a class="card__info" href="${B}/product/${esc(p.id)}">
         <span class="card__row"><span class="card__title">${esc(model(p.title))}</span><span class="card__price">${money(p.price)}</span></span>
-        <span class="card__color">${esc(p.color?.name || '')}</span>
-        <span class="card__swatches">${sibs.map((x) => `<i style="--c:${esc(x.color?.hex || '#ccc')}"${x.id === p.id ? ' class="is-current"' : ''}></i>`).join('')}<small>${n} ${plural(n, 'цвет', 'цвета', 'цветов')}</small></span>
+        ${p.color ? `<span class="card__color">${esc(p.color.name)}</span>
+        <span class="card__swatches">${sibs.map((x) => `<i style="--c:${esc(x.color?.hex || '#ccc')}"${x.id === p.id ? ' class="is-current"' : ''}></i>`).join('')}<small>${n} ${plural(n, 'цвет', 'цвета', 'цветов')}</small></span>` : ''}
       </a></article>`;
   };
 
