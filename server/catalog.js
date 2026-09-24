@@ -20,6 +20,11 @@ function load() {
   return cache;
 }
 
+// Предзаказ: размер, которого нет на складе, сразу уходит в предзаказ. Лимита нет,
+// платится половина, остаток ссылкой перед отправкой. Срок один на все товары.
+export const PREORDER = { note: 'Отправка через 4–6 недель', share: 0.5 };
+export const deposit = (sum) => Math.round(sum * PREORDER.share);
+
 export const all = () => load();
 export const byId = (id) => load().find((p) => p.id === id) || null;
 export const byTildaUid = (uid) => load().find((p) => String(p.tildaUid) === String(uid)) || null;
@@ -43,7 +48,7 @@ export function categories() {
 export function publicList() {
   return load().map((p) => ({
     id: p.id, title: p.title, price: p.price, images: p.images, category: p.category, color: p.color, group: p.group,
-    variants: p.variants.map((v) => ({ size: v.size, price: v.price, inStock: available(p.id, v.size) > 0 })),
+    variants: p.variants.map((v) => ({ size: v.size, price: v.price, inStock: available(p.id, v.size) > 0 })), // нет в наличии = предзаказ
   }));
 }
 

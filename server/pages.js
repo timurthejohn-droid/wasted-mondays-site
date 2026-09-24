@@ -74,7 +74,7 @@ function layout({ title, body, bodyClass = '', user = null }) {
 <link rel="stylesheet" href="/fonts/onest.css">
 <link rel="stylesheet" href="/css/site.css">
 </head>
-<body class="${bodyClass}"${user ? ' data-user="1"' : ''}>
+<body class="${bodyClass}"${user ? ' data-user="1"' : ''} data-pre-note="${esc(catalog.PREORDER.note)}" data-pre-share="${catalog.PREORDER.share}">
 ${MARK_SYMBOL}
 <a class="skip" href="#main">К содержимому</a>
 <div class="perks" data-perks>${PERKS.map(([t, h], i) => `<a href="${h}"${ext(h)}${i === 0 ? ' class="is-active"' : ''}>${esc(t)}</a>`).join('<i aria-hidden="true">|</i>')}</div>
@@ -138,7 +138,8 @@ ${MARK_SYMBOL}
     </div>
     <div class="drawer__foot" data-bag-foot hidden>
       <div class="sumrow"><span>Подытог</span><b data-bag-total></b></div>
-      <a class="btn btn--block" href="/cart">Оформить заказ</a>
+      <p class="mini__pre" data-bag-pre hidden>Предзаказ: сейчас оплачивается 50%, <b data-bag-pre-now></b>, остаток перед отправкой</p>
+      <a class="btn btn--block" href="/cart" data-bag-checkout>Оформить заказ</a>
       <button class="btn btn--block btn--ghost" type="button" data-drawer-close>Продолжить покупки</button>
     </div>
   </div>
@@ -224,14 +225,15 @@ function card(p, order = 0) {
       <img src="${esc(p.images[0])}" alt="" loading="lazy" width="1120" height="1493">
       ${p.images[1] ? `<img class="card__alt" src="${esc(p.images[1])}" alt="" loading="lazy">` : ''}
     </a>
-    ${soldOut ? '<span class="card__tag">Нет в наличии</span>' : sizes.length < variants.length ? '<span class="card__tag">Не все размеры</span>' : ''}
+    ${soldOut ? '<span class="card__tag card__tag--sold">Sold out</span>' : sizes.length < variants.length ? '<span class="card__tag">Не все размеры</span>' : ''}
     <button class="fav card__fav" type="button" aria-label="В избранное: ${esc(p.title)}" data-fav="${esc(p.id)}">${icon.mark}</button>
-    ${soldOut ? '' : `<div class="quick" data-quick>
+    <div class="quick" data-quick>
       <button class="quick__plus" type="button" aria-label="Выбрать размер: ${esc(p.title)}" aria-expanded="false" data-quick-toggle>${icon.plus}</button>
       <div class="quick__sizes" role="group" aria-label="Размеры">
-        ${variants.map((v) => `<button type="button" data-quick-add="${esc(p.id)}" data-size="${esc(v.size)}" ${v.left <= 0 ? 'disabled aria-label="' + esc(v.size) + ', нет в наличии"' : ''}>${esc(v.size)}</button>`).join('')}
+        ${soldOut ? '<span class="quick__label">Предзаказ</span>' : ''}
+        ${variants.map((v) => `<button type="button" data-quick-add="${esc(p.id)}" data-size="${esc(v.size)}"${v.left <= 0 ? ` class="is-pre" aria-label="${esc(v.size)}, предзаказ"` : ''}>${esc(v.size)}</button>`).join('')}
       </div>
-    </div>`}
+    </div>
   </div>
   <a class="card__info" href="/product/${esc(p.id)}">
     <span class="card__row"><span class="card__title">${esc(model(p.title))}</span><span class="card__price">${money(p.price)}</span></span>
@@ -464,7 +466,7 @@ export function product(p, user) {
       ${crumbs([['Главная', '/'], ['Каталог', '/catalog'], ...(cat ? [[cat, catUrl(cat)]] : []), [model(p.title), '']])}
       <div class="pdp__row">
         <h1 class="pdp__title">${esc(model(p.title))}</h1>
-        <p class="pdp__price">${money(p.price)}</p>
+        <p class="pdp__price">${anyAvail ? '' : '<span class="sold-tag">Sold out</span>'}${money(p.price)}</p>
       </div>
 
       <div class="pdp__line">
@@ -478,14 +480,18 @@ export function product(p, user) {
       <fieldset class="sizes">
         <div class="pdp__line"><legend><b>Размер</b></legend><a class="muted-link" href="${TG_MANAGER}" target="_blank" rel="noopener">Помочь с размером</a></div>
         <div class="sizes__list">
-        ${variants.map((v) => `<label class="size${v.left <= 0 ? ' is-out' : ''}">
-          <input type="radio" name="size" value="${esc(v.size)}" ${v.left <= 0 ? 'disabled' : ''}>
-          <span>${esc(v.size)}${v.left > 0 && v.left <= 2 ? '<small>мало</small>' : ''}</span>
+        ${variants.map((v) => `<label class="size${v.left <= 0 ? ' is-pre' : ''}">
+          <input type="radio" name="size" value="${esc(v.size)}"${v.left <= 0 ? ' data-pre' : ''}>
+          <span>${esc(v.size)}${v.left <= 0 ? '<small>предзаказ</small>' : v.left <= 2 ? '<small class="is-low">мало</small>' : ''}</span>
         </label>`).join('')}
         </div>
       </fieldset>
       <p class="pdp__hint" data-size-hint hidden>Выберите размер</p>
-      <button class="btn btn--block btn--lg" type="button" data-add ${anyAvail ? '' : 'disabled'}>${anyAvail ? 'Добавить в корзину' : 'Нет в наличии'}</button>
+      <div class="pre-note" data-pre-info${anyAvail ? ' hidden' : ''}>
+        <p><b>${anyAvail ? 'Этот размер закончился.' : 'Sold out.'}</b> Можно оформить предзаказ: сейчас оплачиваете 50%, <span class="nowrap">${money(catalog.deposit(p.price))}</span>, остаток перед отправкой.</p>
+        <p class="muted">${esc(catalog.PREORDER.note)}</p>
+      </div>
+      <button class="btn btn--block btn--lg" type="button" data-add>${anyAvail ? 'Добавить в корзину' : 'Оформить предзаказ'}</button>
 
       <ul class="pdp__perks">
         <li><span>СПб</span>Самовывоз: ${PICKUP}</li>
@@ -528,7 +534,7 @@ export function product(p, user) {
 </section>
 <div class="buybar" data-buybar hidden>
   <div><b>${esc(model(p.title))}</b><span>${money(p.price)}</span></div>
-  <button class="btn" type="button" data-buybar-add ${anyAvail ? '' : 'disabled'}>${anyAvail ? 'В корзину' : 'Нет в наличии'}</button>
+  <button class="btn" type="button" data-buybar-add>${anyAvail ? 'В корзину' : 'Предзаказ'}</button>
 </div>
 ${others.length ? rail({ title: 'Вам может понравиться', items: others.map(card).join(''), link: '/catalog' }) : ''}
 <section class="shop shop--center" data-recent hidden>
@@ -577,6 +583,11 @@ export function cart(user) {
       <div class="sumrow"><span>Подытог</span><span data-cart-subtotal>0 ₽</span></div>
       <div class="sumrow"><span>Доставка</span><span data-cart-delivery>Бесплатно</span></div>
       <div class="sumrow sumrow--total"><span>Итого</span><b data-cart-total>0 ₽</b></div>
+      <div class="pre-sum" data-pre-sum hidden>
+        <div class="sumrow"><span>К оплате сейчас, 50%</span><b data-pre-now></b></div>
+        <div class="sumrow"><span>Доплата перед отправкой</span><span data-pre-rest></span></div>
+        <p class="muted">Предзаказ. ${esc(catalog.PREORDER.note)}, ссылку на доплату пришлём, когда вещь будет готова.</p>
+      </div>
       <label class="checkbox"><input type="checkbox" name="consent" form="order-form" required><span>Мною прочитаны и принимаются <a href="/offer" target="_blank">правила и условия</a> и <a href="/policy" target="_blank">политика конфиденциальности</a></span></label>
       <label class="checkbox"><input type="checkbox" name="newsletter" form="order-form"><span>Я согласен(-на) получать информацию о новинках и акциях</span></label>
       <p class="form-error" data-form-error role="alert" hidden></p>
@@ -594,11 +605,14 @@ export function orderDone(o, user) {
   const body = `
 <section class="done">
   <p class="eyebrow">Спасибо</p>
-  <h1>Заказ ${esc(o.id)} принят</h1>
+  <h1>${o.kind === 'preorder' ? 'Предзаказ' : 'Заказ'} ${esc(o.id)} принят</h1>
   <div class="done__card">
     ${o.items.map((l) => `<div class="sumrow"><span>${esc(l.title)}, ${esc(l.size)} × ${l.qty}</span><span>${money(l.sum)}</span></div>`).join('')}
     <div class="sumrow"><span>${esc(o.delivery.title)}${o.delivery.address ? `: ${esc(o.delivery.address)}` : ''}</span><span>${o.delivery.price ? money(o.delivery.price) : ''}</span></div>
     <div class="sumrow sumrow--total"><span>Итого</span><b>${money(o.total)}</b></div>
+    ${o.kind === 'preorder' ? `<div class="sumrow"><span>К оплате сейчас, 50%</span><b>${money(o.dueNow)}</b></div>
+    <div class="sumrow"><span>Доплата перед отправкой</span><span>${money(o.balance)}</span></div>
+    <p class="muted">Предзаказ. ${esc(o.shipNote || catalog.PREORDER.note)}, ссылку на доплату пришлём, когда вещь будет готова.</p>` : ''}
   </div>
   <p class="done__test">Тестовый режим: оплата ещё не подключена, заказ сохранён без оплаты.</p>
   <p>Вопросы по заказу: <a href="${TG_MANAGER}">менеджер в Телеграме</a> или ${PHONE}</p>
@@ -707,7 +721,7 @@ export function account(user, orders, tab = 'orders') {
       ${tab === 'orders' ? (orders.length ? orders.map((o) => `
       <article class="order">
         <header class="order__head">
-          <div><b>Заказ ${esc(o.id)}</b><span>${new Date(o.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</span></div>
+          <div><b>${o.kind === 'preorder' ? 'Предзаказ' : 'Заказ'} ${esc(o.id)}</b><span>${new Date(o.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</span></div>
           <span class="status status--${esc(o.status)}">${esc(STATUS[o.status] || o.status)}</span>
         </header>
         <div class="order__items">
@@ -716,7 +730,7 @@ export function account(user, orders, tab = 'orders') {
             <span><b>${esc(model(l.title))}</b><small>Размер ${esc(l.size)} · ${l.qty} шт.</small></span>
           </a>`; }).join('')}
         </div>
-        <footer class="order__foot"><span>${esc(o.delivery.title)}</span><b>${money(o.total)}</b></footer>
+        <footer class="order__foot"><span>${esc(o.delivery.title)}${o.kind === 'preorder' ? `<br><small class="muted">${esc(o.shipNote || '')}. Оплачивается 50%: ${money(o.dueNow)}, доплата ${money(o.balance)}</small>` : ''}</span><b>${money(o.total)}</b></footer>
       </article>`).join('') : `<div class="empty-state"><p>Заказов пока нет.</p><a class="btn" href="/catalog">Перейти в каталог</a></div>`) : ''}
 
       ${tab === 'profile' ? `

@@ -72,7 +72,7 @@
         {
           "size": "S",
           "price": 15000.0,
-          "stock": 2,
+          "stock": 0,
           "tildaUid": 630138075932
         },
         {
@@ -84,7 +84,7 @@
         {
           "size": "XL",
           "price": 15000.0,
-          "stock": 2,
+          "stock": 0,
           "tildaUid": 494232277022
         }
       ],
@@ -168,7 +168,7 @@
         {
           "size": "S",
           "price": 13000.0,
-          "stock": 1,
+          "stock": 0,
           "tildaUid": 839983030912
         },
         {

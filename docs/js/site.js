@@ -12,6 +12,9 @@
   const B = document.documentElement.dataset.base || '';
   const STATIC = document.documentElement.dataset.static === '1';
   const loggedIn = document.body.dataset.user === '1';
+  // Предзаказ: размер не в наличии. Срок и доля предоплаты приходят с сервера.
+  const PRE_NOTE = document.body.dataset.preNote || '';
+  const deposit = (sum) => Math.round(sum * (Number(document.body.dataset.preShare) || 0.5));
   const post = (url, data) => STATIC ? Promise.reject(new Error('Это демо-версия сайта для команды: заказы и вход здесь не работают')) : fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
     .then(async (r) => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || 'Что-то пошло не так'); return d; });
 
@@ -261,11 +264,13 @@
     const sizes = p.variants.filter((v) => v.inStock).map((v) => v.size);
     const sibs = Object.values(all).filter((x) => x.group && x.group === p.group);
     const n = sibs.length || 1;
+    const tag = !sizes.length ? '<span class="card__tag card__tag--sold">Sold out</span>' : sizes.length < p.variants.length ? '<span class="card__tag">Не все размеры</span>' : '';
     return `<article class="card${sizes.length ? '' : ' is-soldout'}" data-id="${esc(p.id)}">
       <div class="card__media"><a class="card__img" href="${B}/product/${esc(p.id)}" tabindex="-1"><img src="${esc(p.images[0])}" alt="" loading="lazy">${p.images[1] ? `<img class="card__alt" src="${esc(p.images[1])}" alt="" loading="lazy">` : ''}</a>
+        ${tag}
         <button class="fav card__fav" type="button" aria-label="В избранное" data-fav="${esc(p.id)}">${markSvg}</button>
-        ${sizes.length ? `<div class="quick" data-quick><button class="quick__plus" type="button" aria-label="Выбрать размер" aria-expanded="false" data-quick-toggle>${plusSvg}</button>
-          <div class="quick__sizes">${p.variants.map((v) => `<button type="button" data-quick-add="${esc(p.id)}" data-size="${esc(v.size)}"${v.inStock ? '' : ' disabled'}>${esc(v.size)}</button>`).join('')}</div></div>` : ''}
+        <div class="quick" data-quick><button class="quick__plus" type="button" aria-label="Выбрать размер" aria-expanded="false" data-quick-toggle>${plusSvg}</button>
+          <div class="quick__sizes">${sizes.length ? '' : '<span class="quick__label">Предзаказ</span>'}${p.variants.map((v) => `<button type="button" data-quick-add="${esc(p.id)}" data-size="${esc(v.size)}"${v.inStock ? '' : ` class="is-pre" aria-label="${esc(v.size)}, предзаказ"`}>${esc(v.size)}</button>`).join('')}</div></div>
       </div>
       <a class="card__info" href="${B}/product/${esc(p.id)}">
         <span class="card__row"><span class="card__title">${esc(model(p.title))}</span><span class="card__price">${money(p.price)}</span></span>
@@ -286,9 +291,8 @@
     const a = e.target.closest('[data-quick-add]');
     if (a) {
       e.preventDefault();
-      cart.add(a.dataset.quickAdd, a.dataset.size);
       a.closest('[data-quick]')?.classList.remove('is-open');
-      showBag(true);
+      addToBag(a.dataset.quickAdd, a.dataset.size);
       return;
     }
     if (!e.target.closest('[data-quick]')) $$('[data-quick].is-open').forEach((x) => x.classList.remove('is-open'));
@@ -307,6 +311,22 @@
       $('[data-recent-list]', recent).innerHTML = list.slice(0, 4).map((p) => cardHtml(p, byId)).join('');
       recent.hidden = false; renderBadges();
     });
+  }
+
+  // Предзаказ и вещи в наличии оформляются разными заказами, поэтому в одну корзину их не смешиваем.
+  const isPre = (byId, l) => !byId[l.productId]?.variants.find((v) => v.size === l.size)?.inStock;
+  async function addToBag(id, size) {
+    const byId = await products();
+    const pre = isPre(byId, { productId: id, size });
+    const lines = cart.items().filter((l) => byId[l.productId]);
+    if (lines.some((l) => isPre(byId, l) !== pre)) {
+      toast(pre ? 'Предзаказ оформляется отдельно от вещей в наличии. Сначала оформите корзину или очистите её'
+        : 'В корзине предзаказ. Вещи в наличии оформляются отдельным заказом: сначала оформите или очистите корзину');
+      showBag(false);
+      return;
+    }
+    cart.add(id, size);
+    showBag(true);
   }
 
   // Мини-корзина справа: количество и удаление прямо в ней, название и фото ведут в карточку.
@@ -328,11 +348,15 @@
       total += v.price * l.qty;
       return `<div class="mini"><a href="${url}" tabindex="-1"><img src="${esc(p.images[0])}" alt=""></a>
         <div><p class="mini__brand">Wasted Mondays</p><a class="mini__title" href="${url}">${esc(model(p.title))}</a>
-        <p class="mini__meta">Размер ${esc(l.size)}</p><p class="mini__price">${money(v.price * l.qty)}</p>
+        <p class="mini__meta">Размер ${esc(l.size)}</p>${isPre(byId, l) ? `<p class="mini__pre">Предзаказ · ${esc(PRE_NOTE)}</p>` : ''}<p class="mini__price">${money(v.price * l.qty)}</p>
         <div class="mini__actions"><div class="qty qty--sm"><button type="button" data-bag-dec="${i}" aria-label="Меньше">−</button><span>${l.qty}</span><button type="button" data-bag-inc="${i}" aria-label="Больше"${l.qty >= 5 ? ' disabled' : ''}>+</button></div>
         <button class="link mini__rm" type="button" data-bag-rm="${i}">Удалить</button></div></div></div>`;
     }).join('');
     $('[data-bag-total]').textContent = money(total);
+    const pre = lines.some(({ l }) => isPre(byId, l));
+    $('[data-bag-pre]').hidden = !pre;
+    $('[data-bag-pre-now]').textContent = money(deposit(total));
+    $('[data-bag-checkout]').textContent = pre ? 'Оформить предзаказ' : 'Оформить заказ';
     foot.hidden = false;
     const inCart = new Set(lines.map(({ l }) => l.productId));
     const others = Object.values(byId).filter((p) => !inCart.has(p.id) && p.variants.some((v) => v.inStock)).slice(0, 3);
@@ -459,9 +483,18 @@
     const sizes = $('.sizes', pdp), hint = $('[data-size-hint]', pdp);
     const picked = () => $('input[name=size]:checked', pdp)?.value;
     // Если в наличии один размер, выбираем его сразу.
-    const avail = $$('input[name=size]:not(:disabled)', pdp);
+    const avail = $$('input[name=size]:not([data-pre])', pdp);
     if (avail.length === 1) avail[0].checked = true;
-    sizes.addEventListener('change', () => { sizes.classList.remove('is-invalid'); hint.hidden = true; });
+    // Выбран размер под предзаказ: показываем условия и меняем текст кнопки.
+    const allPre = !avail.length, preInfo = $('[data-pre-info]', pdp);
+    const syncPre = () => {
+      const pre = allPre || Boolean($('input[name=size]:checked', pdp)?.hasAttribute('data-pre'));
+      preInfo.hidden = !pre;
+      $('[data-add]', pdp).textContent = pre ? 'Оформить предзаказ' : 'Добавить в корзину';
+      const bb = $('[data-buybar-add]'); if (bb) bb.textContent = pre ? 'Предзаказ' : 'В корзину';
+    };
+    sizes.addEventListener('change', () => { sizes.classList.remove('is-invalid'); hint.hidden = true; syncPre(); });
+    syncPre();
     const add = () => {
       const size = picked();
       if (!size) {
@@ -469,8 +502,7 @@
         sizes.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
         return;
       }
-      cart.add(prod.id, size);
-      showBag(true);
+      addToBag(prod.id, size);
     };
     $('[data-add]', pdp)?.addEventListener('click', add);
     $('[data-buybar-add]')?.addEventListener('click', add);
@@ -562,7 +594,7 @@
             <p class="line__brand">Wasted Mondays</p>
             <a class="line__title" href="${B}/product/${esc(p.id)}">${esc(model(p.title))}</a>
             <p class="line__meta">Размер: ${esc(l.size)}</p>
-            ${v.inStock ? '' : '<p class="line__warn">Этого размера больше нет в наличии</p>'}
+            ${v.inStock ? '' : `<p class="line__pre">Предзаказ · ${esc(PRE_NOTE)}</p>`}
             <div class="line__actions">
               <div class="qty"><button type="button" data-dec="${i}" aria-label="Меньше">−</button><span>${l.qty}</span><button type="button" data-inc="${i}" aria-label="Больше">+</button></div>
               <button class="link" type="button" data-rm="${i}">Удалить</button>
@@ -573,6 +605,16 @@
       }).join('');
       $('[data-cart-subtotal]').textContent = money(total);
       $('[data-cart-total]').textContent = money(total);
+      // Предзаказ: половина сейчас, остаток перед отправкой. Смешанную корзину не оформляем.
+      const pre = items.filter((l) => isPre(byId, l)).length, mixed = pre && pre < items.length;
+      $('[data-pre-sum]').hidden = !pre || mixed;
+      $('[data-pre-now]').textContent = money(deposit(total));
+      $('[data-pre-rest]').textContent = money(total - deposit(total));
+      const btn = $('button[type=submit]', summary);
+      btn.textContent = pre ? 'Оформить предзаказ' : 'Оформить заказ';
+      btn.disabled = Boolean(mixed);
+      err.innerHTML = mixed ? 'В корзине вещи в наличии и предзаказ, они оформляются отдельными заказами. <button class="link" type="button" data-rm-pre>Убрать предзаказ</button>' : '';
+      err.hidden = !mixed;
     }
     box.addEventListener('click', (e) => {
       const items = cart.items(), t = e.target.closest('button');
@@ -582,6 +624,10 @@
       else if (t.dataset.rm) items.splice(+t.dataset.rm, 1);
       else return;
       cart.save(items); render();
+    });
+    err.addEventListener('click', (e) => {
+      if (!e.target.closest('[data-rm-pre]')) return;
+      cart.save(cart.items().filter((l) => !isPre(byId, l))); render();
     });
 
     const addr = $('[data-address]');
@@ -613,15 +659,15 @@
       btn.disabled = true; btn.textContent = 'Отправляем…';
       try {
         const res = await post('/api/orders', {
-          items: cart.items(),
+          items: cart.items().map((l) => ({ ...l, preorder: isPre(byId, l) })),
           customer: { name: f.get('name'), email: f.get('email'), phone: f.get('phone'), comment: f.get('comment'), newsletter: !!f.get('newsletter') },
           delivery: { method: f.get('delivery'), address: f.get('address') || '' },
           consent: true,
         });
         location.href = `${B}/order/${res.id}`;
       } catch (ex) {
+        btn.disabled = false; render();
         err.textContent = ex.message; err.hidden = false;
-        btn.disabled = false; btn.textContent = 'Оформить заказ';
       }
     });
     render();

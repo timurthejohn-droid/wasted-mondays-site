@@ -251,7 +251,13 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .card__img img { width: 100%; height: 100%; object-fit: cover; transition: opacity .45s ease; }
 .card__alt { position: absolute; inset: 0; opacity: 0; }
 .card__tag { position: absolute; left: 14px; top: 14px; font-size: 11px; color: var(--ink); }
-.card.is-soldout .card__img img { opacity: .55; }
+/* Sold out: заметно, но без крика, как у Aimé Leon Dore. Фото не гасим, вещь всё ещё продаётся по предзаказу. */
+.card__tag--sold, .sold-tag { display: inline-block; padding: 4px 8px 3px; background: var(--ink); color: var(--paper); font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; line-height: 1.3; }
+.card__tag--sold { left: 10px; top: 10px; }
+.sold-tag { margin-right: 10px; vertical-align: 2px; }
+.quick__label { align-self: center; margin-right: 12px; font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.quick__sizes button.is-pre { color: var(--muted); border-style: dashed; }
+.quick__sizes button.is-pre:hover { color: var(--paper); border-style: solid; }
 .card__info { display: grid; gap: 3px; padding: 14px 14px 30px; text-decoration: none; font-size: 12px; }
 .card__row { display: flex; justify-content: space-between; gap: 12px; }
 .card__title { font-weight: 600; }
@@ -376,7 +382,17 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .size:hover span { border-color: var(--ink); }
 .size input:checked + span { background: var(--ink); color: var(--paper); }
 .size input:focus-visible + span { outline: 2px solid var(--black); outline-offset: 2px; }
-.size small { position: absolute; right: 4px; bottom: 2px; font-size: 8px; color: var(--error); }
+.size small { position: absolute; left: 0; right: 0; bottom: 3px; text-align: center; font-size: 8px; letter-spacing: .04em; color: var(--muted); }
+.size small.is-low { left: auto; right: 4px; bottom: 2px; color: var(--error); }
+.size.is-pre span { padding-bottom: 8px; background: #fafafa; border: 1px dashed var(--line-strong); }
+.size.is-pre input:checked + span { background: var(--ink); color: var(--paper); border-style: solid; }
+.size.is-pre input:checked + span small { color: rgba(255,255,255,.7); }
+.pre-note { display: grid; gap: 4px; padding: 14px 16px; background: var(--soft); font-size: 12px; line-height: 1.5; }
+.pre-sum { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.pre-sum .muted, .done__card .muted { font-size: 12px; }
+.mini__pre, .line__pre { font-size: 12px; margin-top: 4px; }
+.line__pre::before, .mini__meta + .mini__pre::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 6px; background: var(--ink); border-radius: 50%; vertical-align: 1px; }
+.nowrap { white-space: nowrap; }
 .size.is-out span { color: #b8b8b8; cursor: not-allowed; background: linear-gradient(to top right, transparent calc(50% - .5px), #cfcfcf, transparent calc(50% + .5px)) #f7f7f7; }
 .size.is-out:hover span { border-color: transparent; }
 .sizes.is-invalid .size span { border-color: var(--error); }

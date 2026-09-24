@@ -33,6 +33,7 @@ function save() {
 }
 
 function holdsStock(o, now = Date.now()) {
+  if (o.kind === 'preorder') return false; // предзаказ шьётся под заказ, склад не трогает
   if (o.status === 'pending_payment') return now - Date.parse(o.createdAt) < PAYMENT_TTL_MIN * 60_000;
   if (o.status === 'paid') return !o.moyskladId;
   return false;
@@ -59,7 +60,7 @@ export function forUser(user) {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-export const STATUS = { pending_payment: 'Ожидает оплаты', paid: 'Оплачен', shipped: 'Передан в доставку', done: 'Получен', cancelled: 'Отменён' };
+export const STATUS = { pending_payment: 'Ожидает оплаты', paid: 'Оплачен', preorder_paid: 'Предзаказ оплачен на 50%', awaiting_balance: 'Ожидает доплаты', shipped: 'Передан в доставку', done: 'Получен', cancelled: 'Отменён' };
 
 function newId() {
   const d = new Date();
@@ -97,6 +98,10 @@ export function create(input, user = null) {
     if (!Number.isFinite(qty) || qty < 1) continue;
     merged.set(key, Math.min(MAX_QTY_PER_ITEM, (merged.get(key) || 0) + qty));
   }
+  // Размер в наличии продаётся обычно, закончившийся идёт в предзаказ. Браузер присылает, что видел
+  // покупатель (preorder: true/false): если, пока он оформлял, размер закончился, не превращаем
+  // покупку молча в предзаказ, а просим подтвердить.
+  const expected = new Map(raw.map((it) => [`${clean(it.productId, 80)}|${clean(it.size, 10)}`, it.preorder === true]));
   const items = [];
   for (const [key, qty] of merged) {
     const [productId, size] = key.split('|');
@@ -104,20 +109,29 @@ export function create(input, user = null) {
     const v = p && p.variants.find((x) => x.size === size);
     if (!v) return { error: 'Товар из корзины больше не продаётся, обновите страницу' };
     const left = catalog.available(productId, size);
-    if (left < qty) {
-      return { error: left ? `${p.title}, ${size}: осталось ${left} шт.` : `${p.title}, ${size}: закончился`, soldOut: { productId, size, left } };
+    const preorder = left <= 0;
+    if (preorder !== expected.get(key)) {
+      return { error: preorder ? `${p.title}, ${size}: закончился, доступен предзаказ. Обновите страницу` : `${p.title}, ${size}: снова в наличии. Обновите страницу`, soldOut: { productId, size, left } };
     }
-    items.push({ productId, title: p.title, size, qty, price: v.price, sum: v.price * qty });
+    if (!preorder && left < qty) return { error: `${p.title}, ${size}: осталось ${left} шт.`, soldOut: { productId, size, left } };
+    items.push({ productId, title: p.title, size, qty, price: v.price, sum: v.price * qty, preorder });
   }
   if (!items.length) return { error: 'Корзина пуста' };
+  const pre = items.filter((l) => l.preorder).length;
+  if (pre && pre < items.length) return { error: 'Предзаказ и вещи в наличии оформляются отдельными заказами' };
+  const kind = pre ? 'preorder' : 'stock';
 
   const total = items.reduce((s, l) => s + l.sum, 0) + dm.price;
+  // У предзаказа сейчас платится половина, вторая половина ссылкой перед отправкой.
+  const dueNow = kind === 'preorder' ? catalog.deposit(total) : total;
   const order = {
     id: newId(), createdAt: new Date().toISOString(), status: 'pending_payment', userId: user?.id || null,
-    customer, delivery: { ...delivery, title: dm.title, price: dm.price },
-    items, total, payment: null, moyskladId: null, yandexDeliveryId: null,
+    kind, customer, delivery: { ...delivery, title: dm.title, price: dm.price },
+    items, total, dueNow, balance: total - dueNow,
+    ...(kind === 'preorder' ? { shipNote: catalog.PREORDER.note } : {}),
+    payment: null, moyskladId: null, yandexDeliveryId: null,
   };
   list.push(order);
   save();
-  return { id: order.id, total, status: order.status };
+  return { id: order.id, total, dueNow, status: order.status };
 }
