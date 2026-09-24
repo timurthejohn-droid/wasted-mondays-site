@@ -1,0 +1,23 @@
+{
+  "collections": [
+    {
+      "id": "weekends",
+      "title": "Weekends",
+      "drop": "Drop 01",
+      "status": "live",
+      "cover": "/img/site/__7741_copy.jpg",
+      "focus": "50% 20%",
+      "intro": "Первый дроп Wasted Mondays.",
+      "description": "Худи с аппликацией, штаны и две футболки для выходных, которые тянутся до понедельника. Отшили малой партией, сняли своими силами и продали за 48 часов без рекламы."
+    },
+    {
+      "id": "motorsport",
+      "title": "Motorsport",
+      "drop": "Drop 02",
+      "status": "soon",
+      "cover": null,
+      "intro": "Второй дроп про моторспорт.",
+      "description": "Гоночная эстетика, пит-лейн, тачки и движуха. Худи с шелкографией, шорты и первая женская линия Wasted Mondays."
+    }
+  ]
+}

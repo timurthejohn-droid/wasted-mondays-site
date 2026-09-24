@@ -47,7 +47,8 @@
       "color": {
         "name": "Молочный",
         "hex": "#ece6d8"
-      }
+      },
+      "collection": "weekends"
     },
     {
       "id": "wasted-applique-hoodie",
@@ -94,7 +95,8 @@
       "color": {
         "name": "Тёмно-серый",
         "hex": "#3c3d40"
-      }
+      },
+      "collection": "weekends"
     },
     {
       "id": "wasted-t-shirt-membership-only",
@@ -142,7 +144,8 @@
       "color": {
         "name": "Молочный",
         "hex": "#ece6d8"
-      }
+      },
+      "collection": "weekends"
     },
     {
       "id": "wasted-pants",
@@ -190,7 +193,8 @@
       "color": {
         "name": "Тёмно-серый",
         "hex": "#3c3d40"
-      }
+      },
+      "collection": "weekends"
     }
   ]
 }

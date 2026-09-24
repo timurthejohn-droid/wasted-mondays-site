@@ -65,9 +65,9 @@
     "img": "/img/look/08606.jpg",
     "mobile": "/img/look/08606-m.jpg",
     "focus": "60% 40%",
-    "left": "Лукбук",
-    "right": "Смотреть съёмку",
-    "href": "#lookbook"
+    "left": "Коллекции",
+    "right": "Weekends и Motorsport",
+    "href": "/collections"
   },
   "lookbook": [
     "08591",

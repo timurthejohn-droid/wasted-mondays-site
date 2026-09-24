@@ -169,6 +169,7 @@ async function handle(req, res) {
   const routes = {
     '/': () => pages.home(user),
     '/catalog': () => pages.catalogPage(user),
+    '/collections': () => pages.collectionsPage(user),
     '/cart': () => pages.cart(user),
     '/search': () => { const q = (url.searchParams.get('q') || '').slice(0, 100); return pages.searchPage(q, q ? catalog.search(q) : [], user); },
     '/delivery': () => pages.info('delivery', 'Доставка', user),

@@ -84,6 +84,7 @@ ${MARK_SYMBOL}
       <button class="icon-btn hdr__burger" type="button" aria-label="Меню" data-drawer-open="menu">${icon.menu}</button>
       <nav class="hdr__nav" aria-label="Разделы">
         <a href="/catalog">Каталог</a>
+        <a href="/collections">Коллекции</a>
         ${cats.map((c) => `<a href="${catUrl(c)}">${esc(c)}</a>`).join('')}
       </nav>
     </div>
@@ -112,6 +113,7 @@ ${MARK_SYMBOL}
     <div class="drawer__head"><span>Меню</span><button class="icon-btn" type="button" aria-label="Закрыть" data-drawer-close>${icon.close}</button></div>
     <nav class="drawer__nav">
       <a href="/catalog">Каталог ${icon.next}</a>
+      <a href="/collections">Коллекции ${icon.next}</a>
       ${cats.map((c) => `<a href="${catUrl(c)}">${esc(c)} ${icon.next}</a>`).join('')}
       <a href="/catalog?fav=1">Избранное ${icon.next}</a>
     </nav>
@@ -203,22 +205,10 @@ ${body}
 <div class="lead" data-lead hidden>
   <div class="lead__box" role="dialog" aria-modal="true" aria-labelledby="lead-title">
     <div class="lead__body">
-      <form class="lead__form" data-lead-form novalidate>
-        <p class="eyebrow">Drop 02</p>
+      ${leadForm('l', `<p class="eyebrow">Drop 02</p>
         <h2 id="lead-title">Ранний доступ к дропу</h2>
-        <p class="lead__text">Дроп 01 разошёлся за 48 часов. Оставьте почту, и мы пришлём закрытую ссылку на дроп 02 раньше, чем он откроется для всех.</p>
-        <div class="field"><input id="l-email" name="email" type="email" autocomplete="email" placeholder=" " required><label for="l-email">Почта</label></div>
-        <div class="field"><input id="l-phone" name="phone" type="tel" autocomplete="tel" placeholder=" "><label for="l-phone">Телефон для SMS в день дропа, по желанию</label></div>
-        <label class="checkbox"><input type="checkbox" name="consent" required><span>Согласен(-на) на обработку персональных данных и получение писем по <a href="/policy" target="_blank">политике конфиденциальности</a></span></label>
-        <p class="form-error" data-lead-error role="alert" hidden></p>
-        <button class="btn btn--block btn--lg" type="submit">Получить доступ</button>
-      </form>
-      <div class="lead__done" data-lead-done hidden>
-        <p class="eyebrow">Drop 02</p>
-        <h2>Вы в списке</h2>
-        <p class="lead__text">Ссылку на дроп 02 пришлём на почту до открытия продаж. Анонсы и закулисье пока в <a href="${TG_CHANNEL}" target="_blank" rel="noopener">Телеграме</a>.</p>
-        <button class="btn btn--block btn--ghost" type="button" data-lead-close>Продолжить покупки</button>
-      </div>
+        <p class="lead__text">Дроп 01 разошёлся за 48 часов. Оставьте почту, и мы пришлём закрытую ссылку на дроп 02 раньше, чем он откроется для всех.</p>`,
+        '<button class="btn btn--block btn--ghost" type="button" data-lead-close>Продолжить покупки</button>')}
     </div>
     <div class="lead__media"><img src="/img/products/wasted-applique-hoodie/01.jpg" alt="" loading="lazy"></div>
     <button class="icon-btn lead__close" type="button" aria-label="Закрыть" data-lead-close>${icon.close}</button>
@@ -234,6 +224,62 @@ function crumbs(list) {
     i === list.length - 1 ? `<span aria-current="page">${esc(t)}</span>` : `<a href="${h}">${esc(t)}</a>`).join('<i>/</i>')}</nav>`;
 }
 
+// Форма раннего доступа: в попапе и в блоке Motorsport на странице коллекций.
+function leadForm(prefix, head, doneExtra = '') {
+  return `<form class="lead__form" data-lead-form novalidate>
+        ${head}
+        <div class="field"><input id="${prefix}-email" name="email" type="email" autocomplete="email" placeholder=" " required><label for="${prefix}-email">Почта</label></div>
+        <div class="field"><input id="${prefix}-phone" name="phone" type="tel" autocomplete="tel" placeholder=" "><label for="${prefix}-phone">Телефон для SMS в день дропа, по желанию</label></div>
+        <label class="checkbox"><input type="checkbox" name="consent" required><span>Согласен(-на) на обработку персональных данных и получение писем по <a href="/policy" target="_blank">политике конфиденциальности</a></span></label>
+        <p class="form-error" data-lead-error role="alert" hidden></p>
+        <button class="btn btn--block btn--lg" type="submit">Получить доступ</button>
+      </form>
+      <div class="lead__done" data-lead-done hidden>
+        <p class="eyebrow">Drop 02</p>
+        <h2>Вы в списке</h2>
+        <p class="lead__text">Ссылку на дроп 02 пришлём на почту до открытия продаж. Анонсы и закулисье пока в <a href="${TG_CHANNEL}" target="_blank" rel="noopener">Телеграме</a>.</p>
+        ${doneExtra}
+      </div>`;
+}
+
+// Коллекции как у Kith: наверху две большие карточки, клик прокручивает к вещам коллекции ниже.
+export function collectionsPage(user) {
+  const cols = catalog.collections();
+  const cover = (c) => c.cover
+    ? `<img src="${esc(c.cover)}" alt="${esc(c.title)}" style="object-position:${esc(c.focus || '50% 50%')}">`
+    : `<span class="colcard__soon"><b>${esc(c.title)}</b><i aria-hidden="true"></i></span>`;
+  const body = `
+<section class="cols">
+  ${crumbs([['Главная', '/'], ['Коллекции', '']])}
+  <h1 class="cols__title">Коллекции</h1>
+  <div class="cols__grid">
+    ${cols.map((c) => `<a class="colcard" href="#${esc(c.id)}" data-col-link>
+      <span class="colcard__media">${cover(c)}${c.status === 'soon' ? '<span class="card__tag card__tag--sold">Скоро</span>' : ''}</span>
+      <span class="colcard__info">
+        <span class="eyebrow">${esc(c.drop)}</span>
+        <span class="colcard__name">${esc(c.title)}</span>
+        <span class="colcard__text">${esc(c.intro)} ${esc(c.description)}</span>
+        <span class="colcard__more">${c.status === 'soon' ? 'Ранний доступ' : 'Смотреть вещи'} ${icon.chevron}</span>
+      </span>
+    </a>`).join('')}
+  </div>
+</section>
+${cols.map((c) => {
+    const items = catalog.inCollection(c.id);
+    return `<section class="colsec" id="${esc(c.id)}">
+  <header class="colsec__head">
+    <div><p class="eyebrow">${esc(c.drop)}${c.status === 'soon' ? ' · Скоро' : ''}</p><h2>${esc(c.title)}</h2></div>
+    <p>${esc(c.intro)} ${esc(c.description)}</p>
+  </header>
+  ${c.status === 'soon' || !items.length
+    ? `<div class="colsec__soon">${leadForm(`c-${esc(c.id)}`, `<p class="lead__text">Дроп ещё не вышел. Оставьте почту, и мы пришлём закрытую ссылку раньше, чем он откроется для всех.</p>`)}</div>`
+    : `<div class="pgrid">${items.map(card).join('')}</div>
+  <p class="colsec__all"><a class="btn btn--ghost" href="/catalog?col=${esc(c.id)}">Все вещи ${esc(c.title)} в каталоге</a></p>`}
+</section>`;
+  }).join('')}`;
+  return layout({ user, title: `Коллекции | ${BRAND}`, body, bodyClass: 'page-cols' });
+}
+
 // Карточка как у Represent: фото на всю ячейку, "+" в углу открывает размеры,
 // под фото название и цена в строку, цвет и кружки цветов модели.
 function card(p, order = 0) {
@@ -242,7 +288,7 @@ function card(p, order = 0) {
   const soldOut = sizes.length === 0;
   const sibs = catalog.siblings(p);
   const n = sibs.length || 1;
-  return `<article class="card${soldOut ? ' is-soldout' : ''}" data-id="${esc(p.id)}" data-cat="${esc(p.category.join('|'))}"
+  return `<article class="card${soldOut ? ' is-soldout' : ''}" data-id="${esc(p.id)}" data-cat="${esc(p.category.join('|'))}" data-col="${esc(p.collection || '')}"
     data-sizes="${esc(sizes.join('|'))}" data-price="${p.price}" data-order="${order}">
   <div class="card__media">
     <a class="card__img" href="/product/${esc(p.id)}" tabindex="-1" aria-hidden="true">
@@ -400,6 +446,7 @@ export function catalogPage(user) {
   const all = catalog.all();
   const cats = catalog.categories();
   const sizes = [...new Set(all.flatMap((p) => p.variants.map((v) => v.size)))];
+  const cols = catalog.collections().filter((c) => all.some((p) => p.collection === c.id));
   const body = `
 <section class="plp">
   ${crumbs([['Главная', '/'], ['Каталог', '/catalog']])}
@@ -431,6 +478,12 @@ export function catalogPage(user) {
             ${cats.map((c) => `<label class="checkbox"><input type="checkbox" name="cat" value="${esc(c)}"><span>${esc(c)}</span></label>`).join('')}
           </div>
         </details>
+        ${cols.length ? `<details class="acc" open>
+          <summary>Коллекция ${icon.chevron}</summary>
+          <div class="acc__body">
+            ${cols.map((c) => `<label class="checkbox"><input type="checkbox" name="col" value="${esc(c.id)}" data-title="${esc(c.title)}"><span>${esc(c.title)}</span></label>`).join('')}
+          </div>
+        </details>` : ''}
         <details class="acc" open>
           <summary>Размер ${icon.chevron}</summary>
           <div class="acc__body size-chips">

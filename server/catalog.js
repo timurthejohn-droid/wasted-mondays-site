@@ -95,6 +95,11 @@ export function search(q) {
   return (strong.length ? strong : found).sort((a, b) => b.score - a.score).map((x) => x.p);
 }
 
+// Коллекции (дропы): data/collections.json, у товара поле collection с id коллекции.
+const COLLECTIONS = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../data/collections.json');
+export const collections = () => JSON.parse(fs.readFileSync(COLLECTIONS, 'utf8')).collections;
+export const inCollection = (id) => load().filter((p) => p.collection === id);
+
 // Цвета одной модели: худи в двух цветах это два товара с одинаковым group.
 export function siblings(p) {
   return load().filter((x) => x.group && x.group === p.group);

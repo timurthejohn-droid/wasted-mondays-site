@@ -31,6 +31,7 @@ fs.writeFileSync(fontsCss, rebase(fs.readFileSync(fontsCss, 'utf8')));
 
 write('/', pages.home(null));
 write('/catalog', pages.catalogPage(null));
+write('/collections', pages.collectionsPage(null));
 write('/cart', pages.cart(null));
 write('/search', pages.searchPage('', [], null));
 write('/account', pages.login({ email: true, sms: true, yandex: false, emailTest: false, smsTest: false }, {}));

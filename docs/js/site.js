@@ -384,7 +384,7 @@
   function applyFilters() {
     if (!grid) return;
     const checked = (n) => $$(`input[name="${n}"]:checked`).map((i) => i.value);
-    const cats = checked('cat'), sizes = checked('size');
+    const cats = checked('cat'), sizes = checked('size'), cols = checked('col');
     const instock = $('input[name=instock]')?.checked, onlyFav = $('input[name=fav]')?.checked;
     const fav = new Set(favs.list());
     let shown = 0;
@@ -392,16 +392,19 @@
       const cs = c.dataset.cat.split('|'), ss = c.dataset.sizes ? c.dataset.sizes.split('|') : [];
       const ok = (!cats.length || cats.some((x) => cs.includes(x)))
         && (!sizes.length || sizes.some((x) => ss.includes(x)))
+        && (!cols.length || cols.includes(c.dataset.col))
         && (!instock || ss.length > 0)
         && (!onlyFav || fav.has(c.dataset.id));
       c.hidden = !ok; if (ok) shown++;
     });
     $('[data-plp-count]').textContent = `${shown} ${plural(shown, 'товар', 'товара', 'товаров')}`;
-    $('[data-plp-title]').textContent = onlyFav ? 'Избранное' : cats.length === 1 ? cats[0] : 'Каталог';
+    const colTitle = cols.length === 1 ? $(`input[name=col][value="${cols[0]}"]`)?.dataset.title : '';
+    $('[data-plp-title]').textContent = onlyFav ? 'Избранное' : cats.length === 1 ? cats[0] : colTitle || 'Каталог';
     $('[data-empty]').hidden = shown > 0;
-    $$('[data-pill]').forEach((p) => p.classList.toggle('is-active', cats.length <= 1 && p.dataset.pill === (cats[0] || '') && !onlyFav));
+    $$('[data-pill]').forEach((p) => p.classList.toggle('is-active', cats.length <= 1 && p.dataset.pill === (cats[0] || '') && !onlyFav && !cols.length));
     const params = new URLSearchParams();
     cats.forEach((c) => params.append('cat', c));
+    cols.forEach((c) => params.append('col', c));
     if (onlyFav) params.set('fav', '1');
     history.replaceState(null, '', params.toString() ? `?${params}` : location.pathname);
   }
@@ -412,6 +415,7 @@
   if (grid) {
     const qs = new URLSearchParams(location.search);
     qs.getAll('cat').forEach((c) => { const i = $$('input[name=cat]').find((x) => x.value === c); if (i) i.checked = true; });
+    qs.getAll('col').forEach((c) => { const i = $$('input[name=col]').find((x) => x.value === c); if (i) i.checked = true; });
     if (qs.get('fav')) $('input[name=fav]').checked = true;
     $('.filters').addEventListener('change', applyFilters);
     $$('[data-filters-reset]').forEach((b) => b.addEventListener('click', () => { $$('.filters input').forEach((i) => { i.checked = false; }); applyFilters(); }));
@@ -678,7 +682,7 @@
   const lead = $('[data-lead]');
   const LEAD_PAUSE = 14 * 864e5;
   const leadState = store.get('wm_lead', {});
-  const skipLead = $('[data-checkout]') || /\/(order|account)(\/|$)/.test(location.pathname)
+  const skipLead = $('[data-checkout]') || /\/(order|account|collections)(\/|$)/.test(location.pathname)
     || leadState.done || (leadState.closedAt && Date.now() - leadState.closedAt < LEAD_PAUSE);
   if (lead && !skipLead) {
     let pages = 0;
@@ -706,7 +710,11 @@
     lead.addEventListener('click', (e) => { if (e.target === lead || e.target.closest('[data-lead-close]')) closeLead(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLead(); });
 
-    const form = $('[data-lead-form]', lead), err = $('[data-lead-error]', lead);
+  }
+
+  // Форма раннего доступа: в попапе и на странице коллекций.
+  function bindLeadForm(form) {
+    const box = form.parentElement, err = $('[data-lead-error]', box);
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const f = new FormData(form), email = String(f.get('email')).trim(), phone = String(f.get('phone')).trim();
@@ -718,13 +726,23 @@
       const btn = $('button[type=submit]', form);
       btn.disabled = true;
       try {
-        await post('/api/subscribe', { email, phone, consent: true, source: 'popup', page: location.pathname });
+        await post('/api/subscribe', { email, phone, consent: true, source: box.closest('[data-lead]') ? 'popup' : 'collections', page: location.pathname });
         store.set('wm_lead', { done: true, at: Date.now() });
-        form.hidden = true; $('[data-lead-done]', lead).hidden = false;
+        form.hidden = true; $('[data-lead-done]', box).hidden = false;
       } catch (ex) { fail(ex.message); }
       btn.disabled = false;
     });
   }
+  $$('[data-lead-form]').forEach(bindLeadForm);
+
+  // Коллекции: карточка плавно прокручивает к своим вещам.
+  $$('[data-col-link]').forEach((a) => a.addEventListener('click', (e) => {
+    const t = document.getElementById(a.getAttribute('href').slice(1));
+    if (!t) return;
+    e.preventDefault();
+    t.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+    history.replaceState(null, '', a.getAttribute('href'));
+  }));
 
   renderBadges();
 })();
